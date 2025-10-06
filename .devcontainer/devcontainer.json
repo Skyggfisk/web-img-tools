@@ -1,0 +1,24 @@
+{
+    "name": "web-img-tools-dev-container",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash"
+            },
+            "extensions": [
+                "esbenp.prettier-vscode",
+                "dbaeumer.vscode-eslint",
+                "bradlc.vscode-tailwindcss",
+                "bierner.github-markdown-preview",
+                "oven.bun-vscode",
+                "mkxml.vscode-filesize"
+            ]
+        }
+    },
+    "forwardPorts": [
+        3000
+    ]
+}
