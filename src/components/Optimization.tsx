@@ -1,5 +1,5 @@
 import type { ImageInfo } from "../types/types";
-import { formatFileSize } from "./utils/imageUtils";
+import { formatFileSize } from "../utils/imageUtils";
 
 interface OptimizationProps {
   convertFormat: string;
@@ -28,7 +28,7 @@ export function Optimization({
 }: OptimizationProps) {
   return (
     <>
-      <div className="mt-8 text-left max-w-md mx-auto">
+      <div className="text-left max-w-md mx-auto">
         <h2 className="text-2xl font-semibold mb-4">Optimization</h2>
         <div className="space-y-4">
           <div className="flex gap-4 items-center">

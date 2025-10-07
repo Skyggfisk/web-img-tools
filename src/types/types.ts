@@ -4,3 +4,5 @@ export interface ImageInfo {
   lastModified: Date | null;
   exif: any;
 }
+
+export type ActiveTool = "info" | "optimization" | "filters" | "palette";

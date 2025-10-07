@@ -1,7 +1,9 @@
+import type { ActiveTool } from "~/types/types";
+
 interface SidebarProps {
   isOpen: boolean;
-  activeSection: string;
-  onSectionChange: (section: string) => void;
+  activeSection: ActiveTool;
+  onSectionChange: (section: ActiveTool) => void;
   onClose: () => void;
 }
 
@@ -11,7 +13,7 @@ export function Sidebar({
   onSectionChange,
   onClose,
 }: SidebarProps) {
-  const handleSectionClick = (section: string) => {
+  const handleSectionClick = (section: ActiveTool) => {
     onSectionChange(section);
     onClose();
   };

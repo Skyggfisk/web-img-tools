@@ -32,7 +32,7 @@ export function FiltersEdit({
   onReset,
 }: FiltersEditProps) {
   return (
-    <div className="mt-8 text-left max-w-md mx-auto">
+    <div className="text-left max-w-md mx-auto">
       <h2 className="text-2xl font-semibold mb-4">Filters & Edit</h2>
       <div className="space-y-6">
         {/* Color Adjustments */}

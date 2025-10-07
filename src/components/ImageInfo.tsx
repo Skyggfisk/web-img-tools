@@ -1,5 +1,5 @@
 import type { ImageInfo } from "../types/types";
-import { formatFileSize } from "./utils/imageUtils";
+import { formatFileSize } from "../utils/imageUtils";
 
 interface ImageInfoProps {
   imageInfo: ImageInfo;
@@ -7,7 +7,7 @@ interface ImageInfoProps {
 
 export function ImageInfo({ imageInfo }: ImageInfoProps) {
   return (
-    <div className="mt-8 text-left max-w-md mx-auto">
+    <div className="text-left max-w-md mx-auto">
       <h2 className="text-2xl font-semibold mb-4">Image Information</h2>
       <div className="space-y-2">
         <p>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { parse } from "exifr";
 import ColorThief from "colorthief";
 import "~/styles/index.css";
-import type { ImageInfo } from "~/types/types";
+import type { ActiveTool, ImageInfo } from "~/types/types";
 import { BurgerMenu } from "./BurgerMenu";
 import { ImageUpload } from "./ImageUpload";
 import { ImagePreview } from "./ImagePreview";
@@ -12,6 +12,7 @@ import { ColorPalette } from "./ColorPalette";
 import { Optimization } from "./Optimization";
 import { FiltersEdit } from "./FiltersEdit";
 import { ClearImageButton } from "./ClearImageButton";
+import { ToolDrawer } from "./ToolDrawer";
 
 export function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -23,7 +24,8 @@ export function App() {
   const [optimizedSize, setOptimizedSize] = useState<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>("info");
+  const [activeSection, setActiveSection] = useState<ActiveTool>("info");
+  const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
   const [hue, setHue] = useState<number>(0);
   const [saturation, setSaturation] = useState<number>(100);
   const [brightness, setBrightness] = useState<number>(100);
@@ -172,7 +174,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="h-screen w-screen relative overflow-x-hidden">
       {/* Menu section */}
       <BurgerMenu
         isOpen={sidebarOpen}
@@ -188,81 +190,92 @@ export function App() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Title and upload image area section */}
-      <div className="max-w-7xl mx-auto p-8 text-center relative z-10">
-        {!selectedImage && (
-          <>
-            <h1 className="text-5xl font-bold my-4 leading-tight">
-              Web Image Tools
-            </h1>
-            <p className="mb-8">
-              Upload or drag and drop an image to preview and analyze it.
-            </p>
-          </>
-        )}
+      {/* Tool Drawer */}
+      {selectedImage && (
+        <ToolDrawer
+          toolDrawerOpen={toolDrawerOpen}
+          setToolDrawerOpen={setToolDrawerOpen}
+          activeSection={activeSection}
+        >
+          {/* Conditional tools content */}
+          {activeSection === "info" && imageInfo && (
+            <ImageInfoComponent imageInfo={imageInfo} />
+          )}
 
-        {!selectedImage && (
-          <ImageUpload
-            isDragOver={isDragOver}
-            onFileChange={handleFileChange}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          />
-        )}
+          {activeSection === "palette" && palette && (
+            <ColorPalette palette={palette} />
+          )}
 
+          {activeSection === "optimization" && (
+            <Optimization
+              convertFormat={convertFormat}
+              setConvertFormat={setConvertFormat}
+              compressionValue={compressionValue}
+              setCompressionValue={setCompressionValue}
+              onOptimize={handleOptimize}
+              onDownload={handleDownload}
+              optimizedImage={optimizedImage}
+              selectedImage={selectedImage!}
+              imageInfo={imageInfo}
+              optimizedSize={optimizedSize}
+            />
+          )}
+
+          {activeSection === "filters" && (
+            <FiltersEdit
+              hue={hue}
+              setHue={setHue}
+              saturation={saturation}
+              setSaturation={setSaturation}
+              brightness={brightness}
+              setBrightness={setBrightness}
+              contrast={contrast}
+              setContrast={setContrast}
+              rotation={rotation}
+              setRotation={setRotation}
+              scale={scale}
+              setScale={setScale}
+              selectedImage={selectedImage!}
+              onReset={() => {
+                setHue(0);
+                setSaturation(100);
+                setBrightness(100);
+                setContrast(100);
+                setRotation(0);
+                setScale(100);
+              }}
+            />
+          )}
+        </ToolDrawer>
+      )}
+
+      <div className="relative z-10">
         {/* Image preview section */}
         {selectedImage && <ImagePreview src={selectedImage} />}
 
-        {/* Conditional tools section */}
-        {selectedImage && activeSection === "info" && imageInfo && (
-          <ImageInfoComponent imageInfo={imageInfo} />
-        )}
+        <div className="max-w-7xl mx-auto text-center">
+          {/* Title and upload image area section */}
+          {!selectedImage && (
+            <>
+              <h1 className="text-5xl font-bold my-4 leading-tight">
+                Web Image Tools
+              </h1>
+              <p className="mb-8">
+                Upload or drag and drop an image to preview and analyze it.
+              </p>
+            </>
+          )}
 
-        {selectedImage && activeSection === "palette" && palette && (
-          <ColorPalette palette={palette} />
-        )}
-
-        {selectedImage && activeSection === "optimization" && (
-          <Optimization
-            convertFormat={convertFormat}
-            setConvertFormat={setConvertFormat}
-            compressionValue={compressionValue}
-            setCompressionValue={setCompressionValue}
-            onOptimize={handleOptimize}
-            onDownload={handleDownload}
-            optimizedImage={optimizedImage}
-            selectedImage={selectedImage}
-            imageInfo={imageInfo}
-            optimizedSize={optimizedSize}
-          />
-        )}
-
-        {selectedImage && activeSection === "filters" && (
-          <FiltersEdit
-            hue={hue}
-            setHue={setHue}
-            saturation={saturation}
-            setSaturation={setSaturation}
-            brightness={brightness}
-            setBrightness={setBrightness}
-            contrast={contrast}
-            setContrast={setContrast}
-            rotation={rotation}
-            setRotation={setRotation}
-            scale={scale}
-            setScale={setScale}
-            selectedImage={selectedImage}
-            onReset={() => {
-              setHue(0);
-              setSaturation(100);
-              setBrightness(100);
-              setContrast(100);
-              setRotation(0);
-              setScale(100);
-            }}
-          />
-        )}
+          {!selectedImage && (
+            <ImageUpload
+              isDragOver={isDragOver}
+              onFileChange={handleFileChange}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
