@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { parse } from "exifr";
 import ColorThief from "colorthief";
 import "~/styles/index.css";
@@ -32,6 +32,9 @@ export function App() {
   const [contrast, setContrast] = useState<number>(100);
   const [rotation, setRotation] = useState<number>(0);
   const [scale, setScale] = useState<number>(100);
+  const [manipulatedImage, setManipulatedImage] = useState<string | null>(null);
+  const [comparisonSplitPosition, setComparisonSplitPosition] =
+    useState<number>(50);
 
   const extractImageInfo = async (file: File) => {
     const info: ImageInfo = {
@@ -66,6 +69,51 @@ export function App() {
     img.src = URL.createObjectURL(file);
 
     setImageInfo(info);
+  };
+
+  const createManipulatedImage = () => {
+    if (!selectedImage) return;
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+
+      if (ctx) {
+        // Save the context state
+        ctx.save();
+
+        // Move to center for rotation
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+
+        // Apply rotation
+        ctx.rotate((rotation * Math.PI) / 180);
+
+        // Apply scale
+        ctx.scale(scale / 100, scale / 100);
+
+        // Move back
+        ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+        // Apply CSS filters via canvas
+        ctx.filter = `hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${brightness}%) contrast(${contrast}%)`;
+
+        // Draw the image
+        ctx.drawImage(img, 0, 0);
+
+        // Restore context
+        ctx.restore();
+
+        // Convert to data URL
+        const manipulatedDataUrl = canvas.toDataURL();
+        setManipulatedImage(manipulatedDataUrl);
+      }
+    };
+
+    img.src = selectedImage;
   };
 
   const handleFile = (file: File) => {
@@ -173,6 +221,13 @@ export function App() {
     img.src = imageToDownload;
   };
 
+  // Create manipulated image when filters change
+  useEffect(() => {
+    if (selectedImage) {
+      createManipulatedImage();
+    }
+  }, [selectedImage, hue, saturation, brightness, contrast, rotation, scale]);
+
   return (
     <div className="h-screen w-screen relative overflow-x-hidden">
       {/* Menu section */}
@@ -251,8 +306,85 @@ export function App() {
 
       <div className="relative z-10">
         {/* Image preview section */}
-        {selectedImage && <ImagePreview src={selectedImage} />}
+        {selectedImage && (
+          <>
+            <ImagePreview
+              originalSrc={selectedImage}
+              manipulatedSrc={manipulatedImage || undefined}
+              showComparison={
+                manipulatedImage !== null &&
+                (hue !== 0 ||
+                  saturation !== 100 ||
+                  brightness !== 100 ||
+                  contrast !== 100 ||
+                  rotation !== 0 ||
+                  scale !== 100)
+              }
+              splitPosition={comparisonSplitPosition}
+              onSplitPositionChange={setComparisonSplitPosition}
+            />
 
+            {/* Comparison Slider Handle - positioned over the image preview */}
+            {manipulatedImage &&
+              (hue !== 0 ||
+                saturation !== 100 ||
+                brightness !== 100 ||
+                contrast !== 100 ||
+                rotation !== 0 ||
+                scale !== 100) && (
+                <>
+                  {/* Split indicator bar - full height vertical line */}
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-black/50 shadow-lg z-10"
+                    style={{
+                      left: `calc(50% + ${comparisonSplitPosition - 50}%)`,
+                      transform: "translateX(-50%)",
+                    }}
+                  />
+
+                  {/* Slider handle */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-12 h-12 bg-black/70 shadow-xl rounded-full cursor-ew-resize z-20 flex items-center justify-center "
+                    style={{
+                      left: `calc(50% + ${comparisonSplitPosition - 50}%)`,
+                      transform: "translateX(-50%) translateY(-50%)",
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      const startX = e.clientX;
+                      const startPosition = comparisonSplitPosition;
+
+                      const handleMouseMove = (e: MouseEvent) => {
+                        const deltaX = e.clientX - startX;
+                        const containerWidth = window.innerWidth;
+                        const deltaPercent = (deltaX / containerWidth) * 100;
+                        const newPosition = Math.max(
+                          0,
+                          Math.min(100, startPosition + deltaPercent)
+                        );
+                        setComparisonSplitPosition(newPosition);
+                      };
+
+                      const handleMouseUp = () => {
+                        document.removeEventListener(
+                          "mousemove",
+                          handleMouseMove
+                        );
+                        document.removeEventListener("mouseup", handleMouseUp);
+                      };
+
+                      document.addEventListener("mousemove", handleMouseMove);
+                      document.addEventListener("mouseup", handleMouseUp);
+                    }}
+                  >
+                    <span className="text-white text-xl font-bold select-none">
+                      {"< >"}
+                    </span>
+                  </div>
+                </>
+              )}
+          </>
+        )}{" "}
         <div className="max-w-7xl mx-auto text-center">
           {/* Title and upload image area section */}
           {!selectedImage && (

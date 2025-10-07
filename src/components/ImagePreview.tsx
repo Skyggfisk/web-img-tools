@@ -1,18 +1,36 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
 interface ImagePreviewProps {
-  src: string;
+  originalSrc: string;
+  manipulatedSrc?: string;
+  showComparison?: boolean;
   alt?: string;
+  splitPosition?: number;
+  onSplitPositionChange?: (position: number) => void;
 }
 
-export function ImagePreview({ src, alt = "Preview" }: ImagePreviewProps) {
+export function ImagePreview({
+  originalSrc,
+  manipulatedSrc,
+  showComparison = false,
+  alt = "Preview",
+  splitPosition: externalSplitPosition = 50,
+  onSplitPositionChange,
+}: ImagePreviewProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
+  // Use external split position if provided, otherwise use local state
+  const [localSplitPosition, setLocalSplitPosition] = useState(50);
+  const splitPosition = externalSplitPosition;
+  const setSplitPosition = onSplitPositionChange || setLocalSplitPosition;
+
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const originalImageRef = useRef<HTMLImageElement | null>(null);
+  const manipulatedImageRef = useRef<HTMLImageElement | null>(null);
 
   // Handle zoom with mouse wheel
   const handleWheel = useCallback(
@@ -25,7 +43,7 @@ export function ImagePreview({ src, alt = "Preview" }: ImagePreviewProps) {
     [zoom]
   );
 
-  // Handle mouse down for dragging
+  // Handle mouse down for dragging (but not on slider)
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       setIsDragging(true);
@@ -37,11 +55,12 @@ export function ImagePreview({ src, alt = "Preview" }: ImagePreviewProps) {
   // Handle mouse move for dragging
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (!isDragging) return;
-      setPan({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
+      if (isDragging) {
+        setPan({
+          x: e.clientX - dragStart.x,
+          y: e.clientY - dragStart.y,
+        });
+      }
     },
     [isDragging, dragStart]
   );
@@ -95,8 +114,8 @@ export function ImagePreview({ src, alt = "Preview" }: ImagePreviewProps) {
 
   // Handle image load to get dimensions and set initial zoom
   const handleImageLoad = useCallback(() => {
-    if (imageRef.current) {
-      const img = imageRef.current;
+    if (originalImageRef.current) {
+      const img = originalImageRef.current;
       const naturalWidth = img.naturalWidth;
       const naturalHeight = img.naturalHeight;
 
@@ -116,12 +135,126 @@ export function ImagePreview({ src, alt = "Preview" }: ImagePreviewProps) {
     }
   }, []);
 
-  // Reset zoom and pan when src changes
+  // Load original image (only when originalSrc changes)
   useEffect(() => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    setIsDragging(false);
-  }, [src]);
+    const originalImg = new Image();
+    originalImg.crossOrigin = "anonymous";
+    originalImg.onload = () => {
+      originalImageRef.current = originalImg;
+      handleImageLoad();
+      drawCanvas();
+    };
+    originalImg.src = originalSrc;
+  }, [originalSrc]);
+
+  // Load manipulated image (only when manipulatedSrc changes)
+  useEffect(() => {
+    if (manipulatedSrc) {
+      const manipulatedImg = new Image();
+      manipulatedImg.crossOrigin = "anonymous";
+      manipulatedImg.onload = () => {
+        manipulatedImageRef.current = manipulatedImg;
+        drawCanvas();
+      };
+      manipulatedImg.src = manipulatedSrc;
+    } else {
+      manipulatedImageRef.current = null;
+      drawCanvas();
+    }
+  }, [manipulatedSrc]);
+
+  // Draw the canvas with current zoom, pan, and split settings
+  const drawCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    const originalImg = originalImageRef.current;
+    const manipulatedImg = manipulatedImageRef.current;
+
+    if (!canvas || !container || !originalImg) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Set canvas size to container size
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    canvas.width = containerWidth;
+    canvas.height = containerHeight;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, containerWidth, containerHeight);
+
+    // Save context for transformations
+    ctx.save();
+
+    // Apply zoom and pan transforms
+    ctx.translate(containerWidth / 2 + pan.x, containerHeight / 2 + pan.y);
+    ctx.scale(zoom, zoom);
+    ctx.translate(
+      -originalImg.naturalWidth / 2,
+      -originalImg.naturalHeight / 2
+    );
+
+    if (showComparison && manipulatedImg && manipulatedSrc) {
+      // Split view: draw original on left, manipulated on right
+      const splitX = (splitPosition / 100) * containerWidth;
+
+      // Convert split position to image coordinates
+      const imageSplitX =
+        (splitX - containerWidth / 2 - pan.x) / zoom +
+        originalImg.naturalWidth / 2;
+
+      // Draw original image (left portion)
+      const leftWidth = Math.max(
+        0,
+        Math.min(originalImg.naturalWidth, imageSplitX)
+      );
+      if (leftWidth > 0) {
+        ctx.drawImage(
+          originalImg,
+          0,
+          0,
+          leftWidth,
+          originalImg.naturalHeight,
+          0,
+          0,
+          leftWidth,
+          originalImg.naturalHeight
+        );
+      }
+
+      // Draw manipulated image (right portion)
+      const rightStartX = Math.max(
+        0,
+        Math.min(originalImg.naturalWidth, imageSplitX)
+      );
+      const rightWidth = originalImg.naturalWidth - rightStartX;
+      if (rightWidth > 0) {
+        ctx.drawImage(
+          manipulatedImg,
+          rightStartX,
+          0,
+          rightWidth,
+          originalImg.naturalHeight,
+          rightStartX,
+          0,
+          rightWidth,
+          originalImg.naturalHeight
+        );
+      }
+    } else {
+      // Single image view
+      ctx.drawImage(originalImg, 0, 0);
+    }
+
+    // Restore context
+    ctx.restore();
+  }, [zoom, pan, splitPosition, showComparison, manipulatedSrc]);
+
+  // Redraw when zoom, pan, or split position changes
+  useEffect(() => {
+    drawCanvas();
+  }, [drawCanvas]);
 
   return (
     <div
@@ -135,20 +268,13 @@ export function ImagePreview({ src, alt = "Preview" }: ImagePreviewProps) {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <img
-        ref={imageRef}
-        src={src}
-        alt={alt}
-        className="absolute transition-none"
+      {/* Canvas for image rendering */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0"
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          transformOrigin: "center center",
-          maxWidth: "none",
-          maxHeight: "none",
           imageRendering: zoom > 1 ? "auto" : "auto",
         }}
-        onLoad={handleImageLoad}
-        draggable={false}
       />
 
       {/* Zoom indicator */}
