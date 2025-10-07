@@ -2,21 +2,34 @@ import { useState } from "react";
 import { parse } from "exifr";
 import ColorThief from "colorthief";
 import "~/styles/index.css";
-
-interface ImageInfo {
-  fileSize: number;
-  dimensions: { width: number; height: number } | null;
-  lastModified: Date | null;
-  exif: any;
-}
+import type { ImageInfo } from "~/types/types";
+import { BurgerMenu } from "./BurgerMenu";
+import { ImageUpload } from "./ImageUpload";
+import { ImagePreview } from "./ImagePreview";
+import { Sidebar } from "./Sidebar";
+import { ImageInfo as ImageInfoComponent } from "./ImageInfo";
+import { ColorPalette } from "./ColorPalette";
+import { Optimization } from "./Optimization";
+import { FiltersEdit } from "./FiltersEdit";
+import { ClearImageButton } from "./ClearImageButton";
 
 export function App() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageInfo, setImageInfo] = useState<ImageInfo | null>(null);
   const [palette, setPalette] = useState<number[][] | null>(null);
   const [convertFormat, setConvertFormat] = useState<string>("png");
+  const [compressionValue, setCompressionValue] = useState<number>(0.8);
+  const [optimizedImage, setOptimizedImage] = useState<string | null>(null);
+  const [optimizedSize, setOptimizedSize] = useState<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("info");
+  const [hue, setHue] = useState<number>(0);
+  const [saturation, setSaturation] = useState<number>(100);
+  const [brightness, setBrightness] = useState<number>(100);
+  const [contrast, setContrast] = useState<number>(100);
+  const [rotation, setRotation] = useState<number>(0);
+  const [scale, setScale] = useState<number>(100);
 
   const extractImageInfo = async (file: File) => {
     const info: ImageInfo = {
@@ -55,9 +68,10 @@ export function App() {
 
   const handleFile = (file: File) => {
     if (file && file.type.startsWith("image/")) {
-      setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setSelectedImage(url);
+      setOptimizedImage(null);
+      setOptimizedSize(null);
       extractImageInfo(file);
     }
   };
@@ -83,19 +97,51 @@ export function App() {
     setIsDragOver(false);
   };
 
-  const formatFileSize = (bytes: number) => {
-    const units = ["B", "KB", "MB", "GB"];
-    let size = bytes;
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    return `${size.toFixed(2)} ${units[unitIndex]}`;
+  const handleOptimize = () => {
+    if (!selectedImage) return;
+
+    const canvas = document.createElement("canvas");
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(img, 0, 0);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            setOptimizedImage(url);
+            setOptimizedSize(blob.size);
+          }
+        },
+        `image/${convertFormat}`,
+        compressionValue
+      );
+    };
+
+    img.src = selectedImage;
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null);
+    setImageInfo(null);
+    setPalette(null);
+    setOptimizedImage(null);
+    setOptimizedSize(null);
+    setHue(0);
+    setSaturation(100);
+    setBrightness(100);
+    setContrast(100);
+    setRotation(0);
+    setScale(100);
   };
 
   const handleDownload = () => {
-    if (!selectedImage) return;
+    const imageToDownload = optimizedImage || selectedImage;
+    if (!imageToDownload) return;
 
     const canvas = document.createElement("canvas");
     const img = new Image();
@@ -112,145 +158,112 @@ export function App() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `converted.${convertFormat}`;
+            a.download = `optimized.${convertFormat}`;
             a.click();
             URL.revokeObjectURL(url);
           }
         },
         `image/${convertFormat}`,
-        convertFormat === "jpeg" ? 0.9 : undefined
+        convertFormat === "png" ? undefined : compressionValue
       );
     };
 
-    img.src = selectedImage;
+    img.src = imageToDownload;
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-8 text-center relative z-10">
-      <h1 className="text-5xl font-bold my-4 leading-tight">Web Image Tools</h1>
-      <p className="mb-8">
-        Upload or drag and drop an image to preview and analyze it.
-      </p>
+    <div className="min-h-screen relative">
+      {/* Menu section */}
+      <BurgerMenu
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
 
-      <div
-        className={`border-2 border-dashed rounded-lg p-8 mb-4 transition-colors ${
-          isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300"
-        }`}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-      >
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
-          id="file-input"
-        />
-        <label htmlFor="file-input" className="cursor-pointer">
-          <div className="text-gray-600">
-            <p className="text-lg font-semibold">Click to select an image</p>
-            <p>or drag and drop here</p>
-          </div>
-        </label>
-      </div>
+      {selectedImage && <ClearImageButton clearImage={clearImage} />}
 
-      {selectedImage && (
-        <div className="mt-4">
-          <img
-            src={selectedImage}
-            alt="Preview"
-            className="max-w-full max-h-96 border rounded shadow mx-auto"
-          />
-        </div>
-      )}
+      <Sidebar
+        isOpen={sidebarOpen}
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {imageInfo && (
-        <div className="mt-8 text-left max-w-md mx-auto">
-          <h2 className="text-2xl font-semibold mb-4">Image Information</h2>
-          <div className="space-y-2">
-            <p>
-              <strong>File Size:</strong> {formatFileSize(imageInfo.fileSize)}
+      {/* Title and upload image area section */}
+      <div className="max-w-7xl mx-auto p-8 text-center relative z-10">
+        {!selectedImage && (
+          <>
+            <h1 className="text-5xl font-bold my-4 leading-tight">
+              Web Image Tools
+            </h1>
+            <p className="mb-8">
+              Upload or drag and drop an image to preview and analyze it.
             </p>
-            {imageInfo.dimensions && (
-              <p>
-                <strong>Dimensions:</strong> {imageInfo.dimensions.width} x{" "}
-                {imageInfo.dimensions.height} pixels
-              </p>
-            )}
-            {imageInfo.lastModified && (
-              <p>
-                <strong>Last Modified:</strong>{" "}
-                {imageInfo.lastModified.toLocaleString()}
-              </p>
-            )}
-          </div>
+          </>
+        )}
 
-          {imageInfo.exif && Object.keys(imageInfo.exif).length > 0 && (
-            <details className="mt-4">
-              <summary className="cursor-pointer font-semibold">
-                Advanced EXIF Data
-              </summary>
-              <div className="mt-2 p-4 rounded">
-                <pre className="text-sm bg-neutral-700 overflow-x-hidden">
-                  {JSON.stringify(imageInfo.exif, null, 2)}
-                </pre>
-              </div>
-            </details>
-          )}
-        </div>
-      )}
+        {!selectedImage && (
+          <ImageUpload
+            isDragOver={isDragOver}
+            onFileChange={handleFileChange}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          />
+        )}
 
-      {palette && (
-        <div className="mt-8 text-left max-w-md mx-auto">
-          <h2 className="text-2xl font-semibold mb-4">Color Palette</h2>
-          <div className="flex flex-wrap gap-2">
-            {palette.map((color, index) => (
-              <div
-                key={index}
-                className="w-12 h-12 rounded border"
-                style={{
-                  backgroundColor: `rgb(${color[0]}, ${color[1]}, ${color[2]})`,
-                }}
-                title={`RGB(${color[0]}, ${color[1]}, ${color[2]})`}
-              ></div>
-            ))}
-          </div>
-        </div>
-      )}
+        {/* Image preview section */}
+        {selectedImage && <ImagePreview src={selectedImage} />}
 
-      {selectedImage && (
-        <div className="mt-8 text-left max-w-md mx-auto">
-          <h2 className="text-2xl font-semibold mb-4">Convert & Download</h2>
-          <div className="flex gap-4 items-center">
-            <label htmlFor="format-select" className="font-medium">
-              Format:
-            </label>
-            <select
-              id="format-select"
-              value={convertFormat}
-              onChange={(e) => setConvertFormat(e.target.value)}
-              className="px-3 py-2 border rounded"
-            >
-              <option value="png" className="text-black">
-                PNG
-              </option>
-              <option value="jpeg" className="text-black">
-                JPEG
-              </option>
-              <option value="webp" className="text-black">
-                WebP
-              </option>
-            </select>
-            <button
-              onClick={handleDownload}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Download
-            </button>
-          </div>
-        </div>
-      )}
+        {/* Conditional tools section */}
+        {selectedImage && activeSection === "info" && imageInfo && (
+          <ImageInfoComponent imageInfo={imageInfo} />
+        )}
+
+        {selectedImage && activeSection === "palette" && palette && (
+          <ColorPalette palette={palette} />
+        )}
+
+        {selectedImage && activeSection === "optimization" && (
+          <Optimization
+            convertFormat={convertFormat}
+            setConvertFormat={setConvertFormat}
+            compressionValue={compressionValue}
+            setCompressionValue={setCompressionValue}
+            onOptimize={handleOptimize}
+            onDownload={handleDownload}
+            optimizedImage={optimizedImage}
+            selectedImage={selectedImage}
+            imageInfo={imageInfo}
+            optimizedSize={optimizedSize}
+          />
+        )}
+
+        {selectedImage && activeSection === "filters" && (
+          <FiltersEdit
+            hue={hue}
+            setHue={setHue}
+            saturation={saturation}
+            setSaturation={setSaturation}
+            brightness={brightness}
+            setBrightness={setBrightness}
+            contrast={contrast}
+            setContrast={setContrast}
+            rotation={rotation}
+            setRotation={setRotation}
+            scale={scale}
+            setScale={setScale}
+            selectedImage={selectedImage}
+            onReset={() => {
+              setHue(0);
+              setSaturation(100);
+              setBrightness(100);
+              setContrast(100);
+              setRotation(0);
+              setScale(100);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
