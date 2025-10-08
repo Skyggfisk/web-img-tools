@@ -75,6 +75,16 @@ export function Sidebar({
             >
               Filters & Edit
             </button>
+            <button
+              onClick={() => handleSectionClick("transform")}
+              className={`w-full text-left px-4 py-2 rounded-md transition-colors text-white ${
+                activeSection === "transform"
+                  ? "bg-blue-600"
+                  : "hover:bg-neutral-500 cursor-pointer"
+              }`}
+            >
+              Transform
+            </button>
           </nav>
         </div>
       </div>

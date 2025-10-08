@@ -28,6 +28,7 @@ export function ToolDrawer({
           {activeSection === "palette" && "Color Palette"}
           {activeSection === "optimization" && "Optimization"}
           {activeSection === "filters" && "Filters & Edit"}
+          {activeSection === "transform" && "Transform"}
         </span>
         <span
           className={`transform transition-transform duration-200 ${

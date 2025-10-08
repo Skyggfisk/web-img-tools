@@ -13,6 +13,7 @@ import { Optimization } from "./Optimization";
 import { FiltersEdit } from "./FiltersEdit";
 import { ClearImageButton } from "./ClearImageButton";
 import { ToolDrawer } from "./ToolDrawer";
+import { TransformEdit } from "./TransformEdit";
 
 export function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -35,6 +36,9 @@ export function App() {
   const [manipulatedImage, setManipulatedImage] = useState<string | null>(null);
   const [comparisonSplitPosition, setComparisonSplitPosition] =
     useState<number>(50);
+  const [width, setWidth] = useState<number>(0);
+  const [height, setHeight] = useState<number>(0);
+  const [keepAspectRatio, setKeepAspectRatio] = useState<boolean>(true);
 
   const extractImageInfo = async (file: File) => {
     const info: ImageInfo = {
@@ -56,6 +60,10 @@ export function App() {
     img.onload = () => {
       info.dimensions = { width: img.naturalWidth, height: img.naturalHeight };
       setImageInfo({ ...info });
+
+      // Set initial dimensions for the filters
+      setWidth(img.naturalWidth);
+      setHeight(img.naturalHeight);
 
       // Extract palette
       const colorThief = new ColorThief();
@@ -79,8 +87,12 @@ export function App() {
     const img = new Image();
 
     img.onload = () => {
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
+      // Set canvas dimensions based on user input or original dimensions
+      const targetWidth = width > 0 ? width : img.naturalWidth;
+      const targetHeight = height > 0 ? height : img.naturalHeight;
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
 
       if (ctx) {
         // Save the context state
@@ -101,8 +113,8 @@ export function App() {
         // Apply CSS filters via canvas
         ctx.filter = `hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${brightness}%) contrast(${contrast}%)`;
 
-        // Draw the image
-        ctx.drawImage(img, 0, 0);
+        // Draw the image scaled to fit the target dimensions
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
         // Restore context
         ctx.restore();
@@ -187,6 +199,9 @@ export function App() {
     setContrast(100);
     setRotation(0);
     setScale(100);
+    setWidth(0);
+    setHeight(0);
+    setKeepAspectRatio(true);
   };
 
   const handleDownload = () => {
@@ -226,7 +241,17 @@ export function App() {
     if (selectedImage) {
       createManipulatedImage();
     }
-  }, [selectedImage, hue, saturation, brightness, contrast, rotation, scale]);
+  }, [
+    selectedImage,
+    hue,
+    saturation,
+    brightness,
+    contrast,
+    rotation,
+    scale,
+    width,
+    height,
+  ]);
 
   return (
     <div className="h-screen w-screen relative overflow-x-hidden">
@@ -286,18 +311,32 @@ export function App() {
               setBrightness={setBrightness}
               contrast={contrast}
               setContrast={setContrast}
-              rotation={rotation}
-              setRotation={setRotation}
-              scale={scale}
-              setScale={setScale}
-              selectedImage={selectedImage!}
               onReset={() => {
                 setHue(0);
                 setSaturation(100);
                 setBrightness(100);
                 setContrast(100);
-                setRotation(0);
+              }}
+            />
+          )}
+
+          {activeSection === "transform" && (
+            <TransformEdit
+              scale={scale}
+              setScale={setScale}
+              width={width}
+              setWidth={setWidth}
+              height={height}
+              setHeight={setHeight}
+              keepAspectRatio={keepAspectRatio}
+              setKeepAspectRatio={setKeepAspectRatio}
+              originalWidth={imageInfo?.dimensions?.width || 0}
+              originalHeight={imageInfo?.dimensions?.height || 0}
+              onReset={() => {
                 setScale(100);
+                setWidth(imageInfo?.dimensions?.width || 0);
+                setHeight(imageInfo?.dimensions?.height || 0);
+                setKeepAspectRatio(true);
               }}
             />
           )}

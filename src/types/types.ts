@@ -5,4 +5,9 @@ export interface ImageInfo {
   exif: any;
 }
 
-export type ActiveTool = "info" | "optimization" | "filters" | "palette";
+export type ActiveTool =
+  | "info"
+  | "optimization"
+  | "filters"
+  | "palette"
+  | "transform";
