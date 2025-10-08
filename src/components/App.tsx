@@ -49,6 +49,8 @@ export function App() {
       dimensions: null,
       lastModified: new Date(file.lastModified),
       exif: null,
+      format: file.type.split("/")[1] || "unknown",
+      name: file.name,
     };
 
     // Extract EXIF
