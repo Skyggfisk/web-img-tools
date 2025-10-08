@@ -31,6 +31,9 @@ export function App() {
   const [saturation, setSaturation] = useState<number>(100);
   const [brightness, setBrightness] = useState<number>(100);
   const [contrast, setContrast] = useState<number>(100);
+  const [grayscale, setGrayscale] = useState<number>(0);
+  const [invert, setInvert] = useState<number>(0);
+  const [blur, setBlur] = useState<number>(0);
   const [rotation, setRotation] = useState<number>(0);
   const [scale, setScale] = useState<number>(100);
   const [manipulatedImage, setManipulatedImage] = useState<string | null>(null);
@@ -95,6 +98,12 @@ export function App() {
       canvas.height = targetHeight;
 
       if (ctx) {
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Reset any previous filters
+        ctx.filter = "none";
+
         // Save the context state
         ctx.save();
 
@@ -111,7 +120,7 @@ export function App() {
         ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
         // Apply CSS filters via canvas
-        ctx.filter = `hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${brightness}%) contrast(${contrast}%)`;
+        ctx.filter = `blur(${blur}px) hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${brightness}%) contrast(${contrast}%) grayscale(${grayscale}%) invert(${invert}%)`;
 
         // Draw the image scaled to fit the target dimensions
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
@@ -247,6 +256,9 @@ export function App() {
     saturation,
     brightness,
     contrast,
+    grayscale,
+    invert,
+    blur,
     rotation,
     scale,
     width,
@@ -311,11 +323,20 @@ export function App() {
               setBrightness={setBrightness}
               contrast={contrast}
               setContrast={setContrast}
+              grayscale={grayscale}
+              setGrayscale={setGrayscale}
+              invert={invert}
+              setInvert={setInvert}
+              blur={blur}
+              setBlur={setBlur}
               onReset={() => {
                 setHue(0);
                 setSaturation(100);
                 setBrightness(100);
                 setContrast(100);
+                setGrayscale(0);
+                setInvert(0);
+                setBlur(0);
               }}
             />
           )}
@@ -356,6 +377,9 @@ export function App() {
                   saturation !== 100 ||
                   brightness !== 100 ||
                   contrast !== 100 ||
+                  grayscale !== 0 ||
+                  invert !== 0 ||
+                  blur !== 0 ||
                   rotation !== 0 ||
                   scale !== 100)
               }
@@ -369,6 +393,9 @@ export function App() {
                 saturation !== 100 ||
                 brightness !== 100 ||
                 contrast !== 100 ||
+                grayscale !== 0 ||
+                invert !== 0 ||
+                blur !== 0 ||
                 rotation !== 0 ||
                 scale !== 100) && (
                 <>
