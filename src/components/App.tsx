@@ -73,7 +73,8 @@ export function App() {
       // Extract palette
       const colorThief = new ColorThief();
       try {
-        const colors = colorThief.getPalette(img, 8); // Get 8 colors
+        // Use higher quality (lower number = more pixels sampled) and extract more colors
+        const colors = colorThief.getPalette(img, 32, 5); // Get up to 32 colors with quality 5
         setPalette(colors);
       } catch (error) {
         console.log("Error extracting palette:", error);
