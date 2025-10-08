@@ -278,8 +278,26 @@ export function ImagePreview({
       />
 
       {/* Zoom indicator */}
-      <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
-        {Math.round(zoom * 100)}%
+      <div className="absolute top-4 right-4 flex gap-2">
+        <div
+          className="bg-black/50  px-3 py-1 rounded text-sm cursor-pointer"
+          onClick={() => setZoom(1)}
+          title="Zoom, click to reset"
+        >
+          {Math.round(zoom * 100)}%
+        </div>
+        <div
+          className="bg-black/50 px-3 py-1 rounded text-sm cursor-pointer"
+          onClick={() => setZoom((z) => Math.min(z + 0.1, 5))}
+        >
+          +
+        </div>
+        <div
+          className="bg-black/50  px-3 py-1 rounded text-sm cursor-pointer"
+          onClick={() => setZoom((z) => Math.max(z - 0.1, 0.1))}
+        >
+          -
+        </div>
       </div>
     </div>
   );
