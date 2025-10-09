@@ -21,6 +21,7 @@ export function ImagePreview({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [rotation, setRotation] = useState(0);
 
   // Use external split position if provided, otherwise use local state
   const [localSplitPosition, setLocalSplitPosition] = useState(50);
@@ -190,6 +191,7 @@ export function ImagePreview({
     // Apply zoom and pan transforms
     ctx.translate(containerWidth / 2 + pan.x, containerHeight / 2 + pan.y);
     ctx.scale(zoom, zoom);
+    ctx.rotate((rotation * Math.PI) / 180);
     ctx.translate(
       -originalImg.naturalWidth / 2,
       -originalImg.naturalHeight / 2
@@ -198,49 +200,175 @@ export function ImagePreview({
     if (showComparison && manipulatedImg && manipulatedSrc) {
       // Split view: draw original on left, manipulated on right
       const splitX = (splitPosition / 100) * containerWidth;
+      const centerX = containerWidth / 2 + pan.x;
 
-      // Convert split position to image coordinates
-      const imageSplitX =
-        (splitX - containerWidth / 2 - pan.x) / zoom +
-        originalImg.naturalWidth / 2;
+      // Determine which portion of source image corresponds to left screen area
+      // This depends on rotation because transforms change the mapping
 
-      // Draw original image (left portion)
-      const leftWidth = Math.max(
-        0,
-        Math.min(originalImg.naturalWidth, imageSplitX)
-      );
-      if (leftWidth > 0) {
-        ctx.drawImage(
-          originalImg,
+      if (rotation === 0) {
+        // 0°: left screen = left portion of source image
+        const imageSplitX =
+          (splitX - centerX) / zoom + originalImg.naturalWidth / 2;
+        const leftWidth = Math.max(
           0,
-          0,
-          leftWidth,
-          originalImg.naturalHeight,
-          0,
-          0,
-          leftWidth,
-          originalImg.naturalHeight
+          Math.min(originalImg.naturalWidth, imageSplitX)
         );
-      }
 
-      // Draw manipulated image (right portion)
-      const rightStartX = Math.max(
-        0,
-        Math.min(originalImg.naturalWidth, imageSplitX)
-      );
-      const rightWidth = originalImg.naturalWidth - rightStartX;
-      if (rightWidth > 0) {
-        ctx.drawImage(
-          manipulatedImg,
-          rightStartX,
+        if (leftWidth > 0) {
+          ctx.drawImage(
+            originalImg,
+            0,
+            0,
+            leftWidth,
+            originalImg.naturalHeight,
+            0,
+            0,
+            leftWidth,
+            originalImg.naturalHeight
+          );
+        }
+
+        const rightStartX = Math.max(
           0,
-          rightWidth,
-          originalImg.naturalHeight,
-          rightStartX,
-          0,
-          rightWidth,
-          originalImg.naturalHeight
+          Math.min(originalImg.naturalWidth, imageSplitX)
         );
+        const rightWidth = originalImg.naturalWidth - rightStartX;
+        if (rightWidth > 0) {
+          ctx.drawImage(
+            manipulatedImg,
+            rightStartX,
+            0,
+            rightWidth,
+            originalImg.naturalHeight,
+            rightStartX,
+            0,
+            rightWidth,
+            originalImg.naturalHeight
+          );
+        }
+      } else if (rotation === 90) {
+        // 90°: left screen = bottom portion of source image, right screen = top portion
+        const imageSplitY =
+          (centerX - splitX) / zoom + originalImg.naturalHeight / 2;
+        const bottomStartY = Math.max(
+          0,
+          Math.min(originalImg.naturalHeight, imageSplitY)
+        );
+        const bottomHeight = originalImg.naturalHeight - bottomStartY;
+
+        if (bottomHeight > 0) {
+          ctx.drawImage(
+            originalImg,
+            0,
+            bottomStartY,
+            originalImg.naturalWidth,
+            bottomHeight,
+            0,
+            bottomStartY,
+            originalImg.naturalWidth,
+            bottomHeight
+          );
+        }
+
+        const topHeight = Math.max(
+          0,
+          Math.min(originalImg.naturalHeight, imageSplitY)
+        );
+        if (topHeight > 0) {
+          ctx.drawImage(
+            manipulatedImg,
+            0,
+            0,
+            originalImg.naturalWidth,
+            topHeight,
+            0,
+            0,
+            originalImg.naturalWidth,
+            topHeight
+          );
+        }
+      } else if (rotation === 180) {
+        // 180°: left screen = right portion of source image, right screen = left portion
+        const imageSplitX =
+          (centerX - splitX) / zoom + originalImg.naturalWidth / 2;
+        const rightStartX = Math.max(
+          0,
+          Math.min(originalImg.naturalWidth, imageSplitX)
+        );
+        const rightWidth = originalImg.naturalWidth - rightStartX;
+
+        if (rightWidth > 0) {
+          ctx.drawImage(
+            originalImg,
+            rightStartX,
+            0,
+            rightWidth,
+            originalImg.naturalHeight,
+            rightStartX,
+            0,
+            rightWidth,
+            originalImg.naturalHeight
+          );
+        }
+
+        const leftWidth = Math.max(
+          0,
+          Math.min(originalImg.naturalWidth, imageSplitX)
+        );
+        if (leftWidth > 0) {
+          ctx.drawImage(
+            manipulatedImg,
+            0,
+            0,
+            leftWidth,
+            originalImg.naturalHeight,
+            0,
+            0,
+            leftWidth,
+            originalImg.naturalHeight
+          );
+        }
+      } else if (rotation === 270) {
+        // 270°: left screen = top portion of source image, right screen = bottom portion
+        const imageSplitY =
+          (splitX - centerX) / zoom + originalImg.naturalHeight / 2;
+        const topHeight = Math.max(
+          0,
+          Math.min(originalImg.naturalHeight, imageSplitY)
+        );
+
+        if (topHeight > 0) {
+          ctx.drawImage(
+            originalImg,
+            0,
+            0,
+            originalImg.naturalWidth,
+            topHeight,
+            0,
+            0,
+            originalImg.naturalWidth,
+            topHeight
+          );
+        }
+
+        const bottomStartY = Math.max(
+          0,
+          Math.min(originalImg.naturalHeight, imageSplitY)
+        );
+        const bottomHeight = originalImg.naturalHeight - bottomStartY;
+        if (bottomHeight > 0) {
+          ctx.drawImage(
+            manipulatedImg,
+            0,
+            bottomStartY,
+            originalImg.naturalWidth,
+            bottomHeight,
+            0,
+            bottomStartY,
+            originalImg.naturalWidth,
+            bottomHeight
+          );
+        }
       }
     } else {
       // Single image view
@@ -249,7 +377,7 @@ export function ImagePreview({
 
     // Restore context
     ctx.restore();
-  }, [zoom, pan, splitPosition, showComparison, manipulatedSrc]);
+  }, [zoom, pan, rotation, splitPosition, showComparison, manipulatedSrc]);
 
   // Redraw when zoom, pan, or split position changes
   useEffect(() => {
@@ -297,6 +425,19 @@ export function ImagePreview({
           onClick={() => setZoom((z) => Math.max(z - 0.1, 0.1))}
         >
           -
+        </div>
+        <div
+          className="bg-black/50 px-3 py-1 rounded text-sm cursor-pointer"
+          onClick={(e) => {
+            if (e.ctrlKey) {
+              setRotation(0);
+            } else {
+              setRotation((r) => (r + 90) % 360);
+            }
+          }}
+          title="Rotate 90° clockwise"
+        >
+          ↻
         </div>
       </div>
     </div>
