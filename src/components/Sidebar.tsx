@@ -1,4 +1,5 @@
 import type { ActiveTool } from "~/types/types";
+import { SidebarMenu } from "./SidebarMenu";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -35,56 +36,31 @@ export function Sidebar({
           <h2 className="text-xl font-semibold mb-4 text-white">Menu</h2>
           <div className="border-b border-neutral-500 mb-4"></div>
           <nav className="space-y-2">
-            <button
-              onClick={() => handleSectionClick("info")}
-              className={`w-full text-left px-4 py-2 rounded-md transition-colors text-white ${
-                activeSection === "info"
-                  ? "bg-blue-600"
-                  : "hover:bg-neutral-500 cursor-pointer"
-              }`}
-            >
-              Image Information
-            </button>
-            <button
-              onClick={() => handleSectionClick("palette")}
-              className={`w-full text-left px-4 py-2 rounded-md transition-colors text-white ${
-                activeSection === "palette"
-                  ? "bg-blue-600"
-                  : "hover:bg-neutral-500 cursor-pointer"
-              }`}
-            >
-              Color Palette
-            </button>
-            <button
-              onClick={() => handleSectionClick("optimization")}
-              className={`w-full text-left px-4 py-2 rounded-md transition-colors text-white ${
-                activeSection === "optimization"
-                  ? "bg-blue-600"
-                  : "hover:bg-neutral-500 cursor-pointer"
-              }`}
-            >
-              Optimization
-            </button>
-            <button
-              onClick={() => handleSectionClick("filters")}
-              className={`w-full text-left px-4 py-2 rounded-md transition-colors text-white ${
-                activeSection === "filters"
-                  ? "bg-blue-600"
-                  : "hover:bg-neutral-500 cursor-pointer"
-              }`}
-            >
-              Filters & Edit
-            </button>
-            <button
-              onClick={() => handleSectionClick("transform")}
-              className={`w-full text-left px-4 py-2 rounded-md transition-colors text-white ${
-                activeSection === "transform"
-                  ? "bg-blue-600"
-                  : "hover:bg-neutral-500 cursor-pointer"
-              }`}
-            >
-              Transform
-            </button>
+            <SidebarMenu
+              menuName="Image Information"
+              isActiveSection={activeSection === "info"}
+              handleSectionClick={() => handleSectionClick("info")}
+            />
+            <SidebarMenu
+              menuName="Color Palette"
+              isActiveSection={activeSection === "palette"}
+              handleSectionClick={() => handleSectionClick("palette")}
+            />
+            <SidebarMenu
+              menuName="Filters & Edit"
+              isActiveSection={activeSection === "filters"}
+              handleSectionClick={() => handleSectionClick("filters")}
+            />
+            <SidebarMenu
+              menuName="Optimization"
+              isActiveSection={activeSection === "optimization"}
+              handleSectionClick={() => handleSectionClick("optimization")}
+            />
+            <SidebarMenu
+              menuName="Transform"
+              isActiveSection={activeSection === "transform"}
+              handleSectionClick={() => handleSectionClick("transform")}
+            />
           </nav>
         </div>
       </div>

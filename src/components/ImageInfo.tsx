@@ -27,7 +27,7 @@ export function ImageInfo({ imageInfo }: ImageInfoProps) {
   return (
     <div className="text-left mx-auto flex gap-8">
       {/* Basic info */}
-      <div className="grid grid-cols-[auto_1fr] mb-4 grid-rows-[min-content] self-start [&>:nth-child(4n+1)]:bg-black/10 [&>:nth-child(4n+2)]:bg-black/10 [&>:nth-child(4n+3)]:bg-white/5 [&>:nth-child(4n+4)]:bg-white/5">
+      <div className="grid grid-cols-[auto_1fr] mb-4 grid-rows-[min-content] self-start col-2-alternating-colors">
         <strong className="pr-3 p-1">File Name:</strong>
         <span className="p-1" title={imageInfo.name}>
           {formatFileName(imageInfo.name)}
@@ -82,7 +82,7 @@ export function ImageInfo({ imageInfo }: ImageInfoProps) {
       {imageInfo.exif && Object.keys(imageInfo.exif).length > 0 && (
         <div>
           <strong>EXIF Data:</strong>
-          <pre className="text-sm bg-neutral-700 overflow-x-hidden max-h-40">
+          <pre className="text-sm bg-neutral-600 overflow-x-hidden max-h-40">
             {JSON.stringify(imageInfo.exif, null, 2)}
           </pre>
         </div>

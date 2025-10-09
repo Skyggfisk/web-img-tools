@@ -310,7 +310,6 @@ export function App() {
               onOptimize={handleOptimize}
               onDownload={handleDownload}
               optimizedImage={optimizedImage}
-              selectedImage={selectedImage!}
               imageInfo={imageInfo}
               optimizedSize={optimizedSize}
             />
@@ -461,8 +460,9 @@ export function App() {
               <h1 className="text-5xl font-bold my-4 leading-tight">
                 Web Image Tools
               </h1>
-              <p className="mb-8">
-                Upload or drag and drop an image to preview and analyze it.
+              <p className="mb-8 text-neutral-400">
+                View, analyze, and edit images in your browser. Fully local and
+                private.
               </p>
             </>
           )}

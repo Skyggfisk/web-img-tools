@@ -29,4 +29,15 @@
       ),
       linear-gradient(to bottom, var(--color-blue-500), transparent 1px);
   }
+
+  .col-2-alternating-colors {
+    & > *:nth-child(4n + 1),
+    & > *:nth-child(4n + 2) {
+      @apply bg-black/10;
+    }
+    & > *:nth-child(4n + 3),
+    & > *:nth-child(4n + 4) {
+      @apply bg-white/5;
+    }
+  }
 }

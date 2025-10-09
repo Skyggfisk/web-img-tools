@@ -15,8 +15,8 @@ export function ImageUpload({
 }: ImageUploadProps) {
   return (
     <div
-      className={`border-2 border-dashed rounded-lg p-8 mb-4 transition-colors ${
-        isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300"
+      className={`border-2 border-dashed rounded-lg p-8 mb-4 transition-colors size-[50vh] justify-self-center flex justify-center items-center ${
+        isDragOver ? "border-sky-500 bg-sky-50" : "border-neutral-500"
       }`}
       onDrop={onDrop}
       onDragOver={onDragOver}
@@ -30,9 +30,9 @@ export function ImageUpload({
         id="file-input"
       />
       <label htmlFor="file-input" className="cursor-pointer">
-        <div className="text-gray-600">
+        <div className="text-neutral-500">
           <p className="text-lg font-semibold">Click to select an image</p>
-          <p>or drag and drop here</p>
+          <p>or drag and drop it here</p>
         </div>
       </label>
     </div>
