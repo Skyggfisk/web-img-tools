@@ -464,6 +464,10 @@ export function App() {
                 View, analyze, and edit images in your browser. Fully local and
                 private.
               </p>
+              <p className="mb-8 text-neutral-400">
+                ⚠️ Please note that the app is under development and may not
+                work as expected.
+              </p>
             </>
           )}
 

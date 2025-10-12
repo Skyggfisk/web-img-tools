@@ -1,6 +1,9 @@
 # Web Image Tools
 
-A comprehensive client-side image manipulation and analysis web application built with modern web technologies. Upload, analyze, optimize, and edit images directly in your browser with professional-grade tools.
+A comprehensive client-side image manipulation and analysis web application built with modern web technologies. Upload, analyze, optimize, and edit images directly in your browser.
+
+> [!WARNING]
+> This project is still very much under construction and barely any of the features work as described yet. You are free to play around and preview, but don't expect actual optimization or great filters.
 
 ## ✨ Features
 
@@ -12,7 +15,7 @@ A comprehensive client-side image manipulation and analysis web application buil
 - **🔄 Transform Tools** - Rotate and scale images with smooth controls
 - **🔎 Interactive Zoom & Pan** - Mouse wheel zoom and drag-to-pan functionality
 - **📱 Responsive Design** - Works seamlessly on desktop and mobile devices
-- **🎯 Professional UI** - Clean, intuitive interface with tool drawers and navigation
+- **🎯 Intuitive UI** - Clean, intuitive interface with tool drawers and navigation
 
 ## 🔒 Privacy & Security
 
@@ -31,7 +34,6 @@ A comprehensive client-side image manipulation and analysis web application buil
 
 - **exifr** - EXIF metadata extraction from images
 - **colorthief** - Dominant color palette generation
-- **React Hooks** - State management and side effects
 - **Canvas API** - Client-side image processing and manipulation
 
 ### Architecture Highlights
