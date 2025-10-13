@@ -14,7 +14,7 @@ export const ZoomOverlay = ({
   return (
     <div className="absolute top-4 right-4 flex gap-2 select-none">
       <div
-        className="bg-black/50  px-3 py-1 rounded text-sm cursor-pointer"
+        className="bg-black/50 px-3 py-1 rounded text-sm cursor-pointer"
         onClick={() => setZoom(1)}
         title="Zoom, click to reset"
       >
