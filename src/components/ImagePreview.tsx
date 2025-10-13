@@ -1,39 +1,114 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { Application, extend } from "@pixi/react";
+import {
+  Assets,
+  BlurFilter,
+  ColorMatrixFilter,
+  Container,
+  Graphics,
+  Sprite,
+  Texture,
+} from "pixi.js";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PreviewSlider } from "./PreviewSlider";
+import { ZoomOverlay } from "./ZoomOverlay";
 
 interface ImagePreviewProps {
-  originalSrc: string;
-  manipulatedSrc?: string;
+  imageSrc: string;
+  width: number;
+  height: number;
+  saturation: number;
+  brightness: number;
+  contrast: number;
+  hue: number;
+  grayscale: number;
+  invert: number;
+  blur: number;
   showComparison?: boolean;
-  alt?: string;
-  splitPosition?: number;
-  onSplitPositionChange?: (position: number) => void;
 }
 
-export function ImagePreview({
-  originalSrc,
-  manipulatedSrc,
-  showComparison = false,
-  alt = "Preview",
-  splitPosition: externalSplitPosition = 50,
-  onSplitPositionChange,
-}: ImagePreviewProps) {
+extend({ Container, Sprite, Texture, Graphics, BlurFilter, ColorMatrixFilter });
+
+export const ImagePreview = (props: ImagePreviewProps) => {
+  const {
+    imageSrc,
+    width,
+    height,
+    saturation,
+    brightness,
+    contrast,
+    hue,
+    grayscale,
+    invert,
+    blur,
+    showComparison = false,
+  } = props;
+
+  const [sourceImageTexture, setSourceTexture] = useState(Texture.EMPTY);
+  const [manipulatedImageTexture, setManipulatedImageTexture] = useState(
+    Texture.EMPTY
+  );
+
+  const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [pan, setPan] = useState({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [rotation, setRotation] = useState(0);
+  const [comparisonSplitPosition, setComparisonSplitPosition] =
+    useState<number>(50);
 
-  // Use external split position if provided, otherwise use local state
-  const [localSplitPosition, setLocalSplitPosition] = useState(50);
-  const splitPosition = externalSplitPosition;
-  const setSplitPosition = onSplitPositionChange || setLocalSplitPosition;
+  // load the texture
+  useEffect(() => {
+    if (sourceImageTexture === Texture.EMPTY) {
+      Assets.load({ src: imageSrc, parser: "loadTextures" }).then(
+        (loadedTexture) => {
+          setSourceTexture(loadedTexture);
+          setManipulatedImageTexture(loadedTexture);
+        }
+      );
+    }
+  }, [imageSrc]);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const originalImageRef = useRef<HTMLImageElement | null>(null);
-  const manipulatedImageRef = useRef<HTMLImageElement | null>(null);
+  const filters = useMemo(() => {
+    const filterList = [];
 
-  // Handle zoom with mouse wheel
+    // create a blur filter
+    if (blur > 0) {
+      const blurFilter = new BlurFilter();
+      blurFilter.blur = blur;
+      filterList.push(blurFilter);
+    }
+
+    // color adjustment filters - multiply (stack) false for now
+    const colorMatrix = new ColorMatrixFilter();
+    if (hue !== 0) colorMatrix.hue(hue, false);
+    if (saturation !== 100) colorMatrix.saturate(saturation / 100 - 1, false);
+    if (brightness !== 100) colorMatrix.brightness(brightness / 100, false);
+    if (contrast !== 100) colorMatrix.contrast(contrast / 100, false);
+    if (grayscale > 0) colorMatrix.grayscale(grayscale / 100, false);
+    if (invert > 0) colorMatrix.negative(false); // invert is boolean
+    // TODO: more filters and presets available check later
+    filterList.push(colorMatrix);
+
+    return filterList;
+  }, [hue, saturation, brightness, contrast, grayscale, invert, blur]);
+
+  const splitMask = useMemo(() => {
+    if (!showComparison) return null;
+    const mask = new Graphics();
+    mask.rect(
+      0,
+      0,
+      (comparisonSplitPosition / 100) * window.innerWidth,
+      window.innerHeight
+    );
+    mask.fill(0xffffff);
+    return mask;
+  }, [showComparison, comparisonSplitPosition, width, height]);
+
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       e.preventDefault();
@@ -44,7 +119,6 @@ export function ImagePreview({
     [zoom]
   );
 
-  // Handle mouse down for dragging (but not on slider)
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       setIsDragging(true);
@@ -53,7 +127,6 @@ export function ImagePreview({
     [pan]
   );
 
-  // Handle mouse move for dragging
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (isDragging) {
@@ -66,41 +139,7 @@ export function ImagePreview({
     [isDragging, dragStart]
   );
 
-  // Handle mouse up to stop dragging
   const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  // Handle touch events for mobile
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        if (touch) {
-          setIsDragging(true);
-          setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
-        }
-      }
-    },
-    [pan]
-  );
-
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (!isDragging || e.touches.length !== 1) return;
-      const touch = e.touches[0];
-      if (touch) {
-        e.preventDefault();
-        setPan({
-          x: touch.clientX - dragStart.x,
-          y: touch.clientY - dragStart.y,
-        });
-      }
-    },
-    [isDragging, dragStart]
-  );
-
-  const handleTouchEnd = useCallback(() => {
     setIsDragging(false);
   }, []);
 
@@ -115,331 +154,78 @@ export function ImagePreview({
 
   // Handle image load to get dimensions and set initial zoom
   const handleImageLoad = useCallback(() => {
-    if (originalImageRef.current) {
-      const img = originalImageRef.current;
-      const naturalWidth = img.naturalWidth;
-      const naturalHeight = img.naturalHeight;
+    // Calculate initial zoom to fit the image in the viewport
+    const container = containerRef.current;
+    if (container) {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
 
-      // Calculate initial zoom to fit the image in the viewport
-      const container = containerRef.current;
-      if (container) {
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
+      const scaleX = containerWidth / width;
+      const scaleY = containerHeight / height;
+      const initialZoom = Math.min(scaleX, scaleY, 1); // Don't zoom in if image is smaller than container
 
-        const scaleX = containerWidth / naturalWidth;
-        const scaleY = containerHeight / naturalHeight;
-        const initialZoom = Math.min(scaleX, scaleY, 1); // Don't zoom in if image is smaller than container
-
-        setZoom(initialZoom);
-        setPan({ x: 0, y: 0 }); // Center the image
-      }
+      setZoom(initialZoom);
     }
   }, []);
 
-  // Load original image (only when originalSrc changes)
   useEffect(() => {
-    const originalImg = new Image();
-    originalImg.crossOrigin = "anonymous";
-    originalImg.onload = () => {
-      originalImageRef.current = originalImg;
-      handleImageLoad();
-      drawCanvas();
-    };
-    originalImg.src = originalSrc;
-  }, [originalSrc]);
-
-  // Load manipulated image (only when manipulatedSrc changes)
-  useEffect(() => {
-    if (manipulatedSrc) {
-      const manipulatedImg = new Image();
-      manipulatedImg.crossOrigin = "anonymous";
-      manipulatedImg.onload = () => {
-        manipulatedImageRef.current = manipulatedImg;
-        drawCanvas();
-      };
-      manipulatedImg.src = manipulatedSrc;
-    } else {
-      manipulatedImageRef.current = null;
-      drawCanvas();
-    }
-  }, [manipulatedSrc]);
-
-  // Draw the canvas with current zoom, pan, and split settings
-  const drawCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    const originalImg = originalImageRef.current;
-    const manipulatedImg = manipulatedImageRef.current;
-
-    if (!canvas || !container || !originalImg) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Set canvas size to container size
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    canvas.width = containerWidth;
-    canvas.height = containerHeight;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, containerWidth, containerHeight);
-
-    // Save context for transformations
-    ctx.save();
-
-    // Apply zoom and pan transforms
-    ctx.translate(containerWidth / 2 + pan.x, containerHeight / 2 + pan.y);
-    ctx.scale(zoom, zoom);
-    ctx.rotate((rotation * Math.PI) / 180);
-    ctx.translate(
-      -originalImg.naturalWidth / 2,
-      -originalImg.naturalHeight / 2
-    );
-
-    if (showComparison && manipulatedImg && manipulatedSrc) {
-      // Split view: draw original on left, manipulated on right
-      const splitX = (splitPosition / 100) * containerWidth;
-      const centerX = containerWidth / 2 + pan.x;
-
-      // Determine which portion of source image corresponds to left screen area
-      // This depends on rotation because transforms change the mapping
-
-      if (rotation === 0) {
-        // 0°: left screen = left portion of source image
-        const imageSplitX =
-          (splitX - centerX) / zoom + originalImg.naturalWidth / 2;
-        const leftWidth = Math.max(
-          0,
-          Math.min(originalImg.naturalWidth, imageSplitX)
-        );
-
-        if (leftWidth > 0) {
-          ctx.drawImage(
-            originalImg,
-            0,
-            0,
-            leftWidth,
-            originalImg.naturalHeight,
-            0,
-            0,
-            leftWidth,
-            originalImg.naturalHeight
-          );
-        }
-
-        const rightStartX = Math.max(
-          0,
-          Math.min(originalImg.naturalWidth, imageSplitX)
-        );
-        const rightWidth = originalImg.naturalWidth - rightStartX;
-        if (rightWidth > 0) {
-          ctx.drawImage(
-            manipulatedImg,
-            rightStartX,
-            0,
-            rightWidth,
-            originalImg.naturalHeight,
-            rightStartX,
-            0,
-            rightWidth,
-            originalImg.naturalHeight
-          );
-        }
-      } else if (rotation === 90) {
-        // 90°: left screen = bottom portion of source image, right screen = top portion
-        const imageSplitY =
-          (centerX - splitX) / zoom + originalImg.naturalHeight / 2;
-        const bottomStartY = Math.max(
-          0,
-          Math.min(originalImg.naturalHeight, imageSplitY)
-        );
-        const bottomHeight = originalImg.naturalHeight - bottomStartY;
-
-        if (bottomHeight > 0) {
-          ctx.drawImage(
-            originalImg,
-            0,
-            bottomStartY,
-            originalImg.naturalWidth,
-            bottomHeight,
-            0,
-            bottomStartY,
-            originalImg.naturalWidth,
-            bottomHeight
-          );
-        }
-
-        const topHeight = Math.max(
-          0,
-          Math.min(originalImg.naturalHeight, imageSplitY)
-        );
-        if (topHeight > 0) {
-          ctx.drawImage(
-            manipulatedImg,
-            0,
-            0,
-            originalImg.naturalWidth,
-            topHeight,
-            0,
-            0,
-            originalImg.naturalWidth,
-            topHeight
-          );
-        }
-      } else if (rotation === 180) {
-        // 180°: left screen = right portion of source image, right screen = left portion
-        const imageSplitX =
-          (centerX - splitX) / zoom + originalImg.naturalWidth / 2;
-        const rightStartX = Math.max(
-          0,
-          Math.min(originalImg.naturalWidth, imageSplitX)
-        );
-        const rightWidth = originalImg.naturalWidth - rightStartX;
-
-        if (rightWidth > 0) {
-          ctx.drawImage(
-            originalImg,
-            rightStartX,
-            0,
-            rightWidth,
-            originalImg.naturalHeight,
-            rightStartX,
-            0,
-            rightWidth,
-            originalImg.naturalHeight
-          );
-        }
-
-        const leftWidth = Math.max(
-          0,
-          Math.min(originalImg.naturalWidth, imageSplitX)
-        );
-        if (leftWidth > 0) {
-          ctx.drawImage(
-            manipulatedImg,
-            0,
-            0,
-            leftWidth,
-            originalImg.naturalHeight,
-            0,
-            0,
-            leftWidth,
-            originalImg.naturalHeight
-          );
-        }
-      } else if (rotation === 270) {
-        // 270°: left screen = top portion of source image, right screen = bottom portion
-        const imageSplitY =
-          (splitX - centerX) / zoom + originalImg.naturalHeight / 2;
-        const topHeight = Math.max(
-          0,
-          Math.min(originalImg.naturalHeight, imageSplitY)
-        );
-
-        if (topHeight > 0) {
-          ctx.drawImage(
-            originalImg,
-            0,
-            0,
-            originalImg.naturalWidth,
-            topHeight,
-            0,
-            0,
-            originalImg.naturalWidth,
-            topHeight
-          );
-        }
-
-        const bottomStartY = Math.max(
-          0,
-          Math.min(originalImg.naturalHeight, imageSplitY)
-        );
-        const bottomHeight = originalImg.naturalHeight - bottomStartY;
-        if (bottomHeight > 0) {
-          ctx.drawImage(
-            manipulatedImg,
-            0,
-            bottomStartY,
-            originalImg.naturalWidth,
-            bottomHeight,
-            0,
-            bottomStartY,
-            originalImg.naturalWidth,
-            bottomHeight
-          );
-        }
-      }
-    } else {
-      // Single image view
-      ctx.drawImage(originalImg, 0, 0);
-    }
-
-    // Restore context
-    ctx.restore();
-  }, [zoom, pan, rotation, splitPosition, showComparison, manipulatedSrc]);
-
-  // Redraw when zoom, pan, or split position changes
-  useEffect(() => {
-    drawCanvas();
-  }, [drawCanvas]);
+    handleImageLoad();
+  }, [imageSrc, handleImageLoad]);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative w-full h-screen overflow-hidden cursor-move select-none bg-transparency-grid"
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* Canvas for image rendering */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0"
-        style={{
-          imageRendering: zoom > 1 ? "auto" : "auto",
-        }}
-      />
+    <>
+      <div
+        className="relative w-full h-screen overflow-hidden cursor-move select-none bg-transparency-grid"
+        ref={containerRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <Application
+          backgroundAlpha={0}
+          resolution={window.devicePixelRatio || 1}
+          resizeTo={window}
+        >
+          <pixiContainer
+            x={pan.x}
+            y={pan.y}
+            scale={zoom}
+            pivot={{ x: width / 2, y: height / 2 }}
+            rotation={(rotation * Math.PI) / 180}
+          >
+            {/* Manipulated image, order matters here */}
+            {showComparison && (
+              <pixiSprite
+                texture={manipulatedImageTexture}
+                width={width}
+                height={height}
+                filters={filters}
+              />
+            )}
 
-      {/* Zoom indicator */}
-      <div className="absolute top-4 right-4 flex gap-2">
-        <div
-          className="bg-black/50  px-3 py-1 rounded text-sm cursor-pointer"
-          onClick={() => setZoom(1)}
-          title="Zoom, click to reset"
-        >
-          {Math.round(zoom * 100)}%
-        </div>
-        <div
-          className="bg-black/50 px-3 py-1 rounded text-sm cursor-pointer"
-          onClick={() => setZoom((z) => Math.min(z + 0.1, 5))}
-        >
-          +
-        </div>
-        <div
-          className="bg-black/50  px-3 py-1 rounded text-sm cursor-pointer"
-          onClick={() => setZoom((z) => Math.max(z - 0.1, 0.1))}
-        >
-          -
-        </div>
-        <div
-          className="bg-black/50 px-3 py-1 rounded text-sm cursor-pointer"
-          onClick={(e) => {
-            if (e.ctrlKey) {
-              setRotation(0);
-            } else {
-              setRotation((r) => (r + 90) % 360);
-            }
-          }}
-          title="Rotate 90° clockwise"
-        >
-          ↻
-        </div>
+            {/* Original image */}
+            <pixiSprite
+              texture={sourceImageTexture}
+              width={width}
+              height={height}
+              mask={showComparison ? splitMask : undefined}
+            />
+          </pixiContainer>
+        </Application>
       </div>
-    </div>
+      <ZoomOverlay
+        zoom={zoom}
+        setZoom={setZoom}
+        rotation={rotation}
+        setRotation={setRotation}
+      />
+      {showComparison && (
+        <PreviewSlider
+          comparisonSplitPosition={comparisonSplitPosition}
+          setComparisonSplitPosition={setComparisonSplitPosition}
+        />
+      )}
+    </>
   );
-}
+};

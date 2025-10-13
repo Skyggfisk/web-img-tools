@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { parse } from "exifr";
 import ColorThief from "colorthief";
 import "~/styles/index.css";
 import type { ActiveTool, ImageInfo } from "~/types/types";
 import { BurgerMenu } from "./BurgerMenu";
 import { ImageUpload } from "./ImageUpload";
-import { ImagePreview } from "./ImagePreview";
 import { Sidebar } from "./Sidebar";
 import { ImageInfo as ImageInfoComponent } from "./ImageInfo";
 import { ColorPalette } from "./ColorPalette";
@@ -14,8 +13,11 @@ import { FiltersEdit } from "./FiltersEdit";
 import { ClearImageButton } from "./ClearImageButton";
 import { ToolDrawer } from "./ToolDrawer";
 import { TransformEdit } from "./TransformEdit";
+import { LoadingSpinner } from "./LoadingSpinner";
+import { ImagePreview } from "./ImagePreview";
 
 export function App() {
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageInfo, setImageInfo] = useState<ImageInfo | null>(null);
   const [palette, setPalette] = useState<number[][] | null>(null);
@@ -36,14 +38,13 @@ export function App() {
   const [blur, setBlur] = useState<number>(0);
   const [rotation, setRotation] = useState<number>(0);
   const [scale, setScale] = useState<number>(100);
-  const [manipulatedImage, setManipulatedImage] = useState<string | null>(null);
-  const [comparisonSplitPosition, setComparisonSplitPosition] =
-    useState<number>(50);
   const [width, setWidth] = useState<number>(0);
   const [height, setHeight] = useState<number>(0);
   const [keepAspectRatio, setKeepAspectRatio] = useState<boolean>(true);
 
   const extractImageInfo = async (file: File) => {
+    setIsLoadingImage(true);
+
     const info: ImageInfo = {
       fileSize: file.size,
       dimensions: null,
@@ -73,71 +74,16 @@ export function App() {
       // Extract palette
       const colorThief = new ColorThief();
       try {
-        // Use higher quality (lower number = more pixels sampled) and extract more colors
-        const colors = colorThief.getPalette(img, 32, 5); // Get up to 32 colors with quality 5
+        const colors = colorThief.getPalette(img, 32, 5);
         setPalette(colors);
       } catch (error) {
         console.log("Error extracting palette:", error);
       }
+      setIsLoadingImage(false);
     };
     img.src = URL.createObjectURL(file);
 
     setImageInfo(info);
-  };
-
-  const createManipulatedImage = () => {
-    if (!selectedImage) return;
-
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-
-    img.onload = () => {
-      // Set canvas dimensions based on user input or original dimensions
-      const targetWidth = width > 0 ? width : img.naturalWidth;
-      const targetHeight = height > 0 ? height : img.naturalHeight;
-
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-
-      if (ctx) {
-        // Clear the canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Reset any previous filters
-        ctx.filter = "none";
-
-        // Save the context state
-        ctx.save();
-
-        // Move to center for rotation
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-
-        // Apply rotation
-        ctx.rotate((rotation * Math.PI) / 180);
-
-        // Apply scale
-        ctx.scale(scale / 100, scale / 100);
-
-        // Move back
-        ctx.translate(-canvas.width / 2, -canvas.height / 2);
-
-        // Apply CSS filters via canvas
-        ctx.filter = `blur(${blur}px) hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${brightness}%) contrast(${contrast}%) grayscale(${grayscale}%) invert(${invert}%)`;
-
-        // Draw the image scaled to fit the target dimensions
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-
-        // Restore context
-        ctx.restore();
-
-        // Convert to data URL
-        const manipulatedDataUrl = canvas.toDataURL();
-        setManipulatedImage(manipulatedDataUrl);
-      }
-    };
-
-    img.src = selectedImage;
   };
 
   const handleFile = (file: File) => {
@@ -248,26 +194,6 @@ export function App() {
     img.src = imageToDownload;
   };
 
-  // Create manipulated image when filters change
-  useEffect(() => {
-    if (selectedImage) {
-      createManipulatedImage();
-    }
-  }, [
-    selectedImage,
-    hue,
-    saturation,
-    brightness,
-    contrast,
-    grayscale,
-    invert,
-    blur,
-    rotation,
-    scale,
-    width,
-    height,
-  ]);
-
   return (
     <div className="h-screen w-screen relative overflow-x-hidden">
       {/* Menu section */}
@@ -275,16 +201,13 @@ export function App() {
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
-
       {selectedImage && <ClearImageButton clearImage={clearImage} />}
-
       <Sidebar
         isOpen={sidebarOpen}
         activeSection={activeSection}
         onSectionChange={setActiveSection}
         onClose={() => setSidebarOpen(false)}
       />
-
       {/* Tool Drawer */}
       {selectedImage && (
         <ToolDrawer
@@ -365,123 +288,46 @@ export function App() {
           )}
         </ToolDrawer>
       )}
-
-      <div className="relative z-10">
-        {/* Image preview section */}
-        {selectedImage && (
-          <>
-            <ImagePreview
-              originalSrc={selectedImage}
-              manipulatedSrc={manipulatedImage || undefined}
-              showComparison={
-                manipulatedImage !== null &&
-                (hue !== 0 ||
-                  saturation !== 100 ||
-                  brightness !== 100 ||
-                  contrast !== 100 ||
-                  grayscale !== 0 ||
-                  invert !== 0 ||
-                  blur !== 0 ||
-                  rotation !== 0 ||
-                  scale !== 100)
-              }
-              splitPosition={comparisonSplitPosition}
-              onSplitPositionChange={setComparisonSplitPosition}
-            />
-
-            {/* Comparison Slider Handle - positioned over the image preview */}
-            {manipulatedImage &&
-              (hue !== 0 ||
-                saturation !== 100 ||
-                brightness !== 100 ||
-                contrast !== 100 ||
-                grayscale !== 0 ||
-                invert !== 0 ||
-                blur !== 0 ||
-                rotation !== 0 ||
-                scale !== 100) && (
-                <>
-                  {/* Split indicator bar - full height vertical line */}
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-black/50 shadow-lg z-10"
-                    style={{
-                      left: `calc(50% + ${comparisonSplitPosition - 50}%)`,
-                      transform: "translateX(-50%)",
-                    }}
-                  />
-
-                  {/* Slider handle */}
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-12 h-12 bg-black/70 shadow-xl rounded-full cursor-ew-resize z-20 flex items-center justify-center "
-                    style={{
-                      left: `calc(50% + ${comparisonSplitPosition - 50}%)`,
-                      transform: "translateX(-50%) translateY(-50%)",
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      const startX = e.clientX;
-                      const startPosition = comparisonSplitPosition;
-
-                      const handleMouseMove = (e: MouseEvent) => {
-                        const deltaX = e.clientX - startX;
-                        const containerWidth = window.innerWidth;
-                        const deltaPercent = (deltaX / containerWidth) * 100;
-                        const newPosition = Math.max(
-                          0,
-                          Math.min(100, startPosition + deltaPercent)
-                        );
-                        setComparisonSplitPosition(newPosition);
-                      };
-
-                      const handleMouseUp = () => {
-                        document.removeEventListener(
-                          "mousemove",
-                          handleMouseMove
-                        );
-                        document.removeEventListener("mouseup", handleMouseUp);
-                      };
-
-                      document.addEventListener("mousemove", handleMouseMove);
-                      document.addEventListener("mouseup", handleMouseUp);
-                    }}
-                  >
-                    <span className="text-white text-xl font-bold select-none">
-                      {"< >"}
-                    </span>
-                  </div>
-                </>
-              )}
-          </>
-        )}{" "}
-        <div className="max-w-7xl mx-auto text-center">
-          {/* Title and upload image area section */}
-          {!selectedImage && (
-            <>
-              <h1 className="text-5xl font-bold my-4 leading-tight">
-                Web Image Tools
-              </h1>
-              <p className="mb-8 text-neutral-400">
-                View, analyze, and edit images in your browser. Fully local and
-                private.
-              </p>
-              <p className="mb-8 text-neutral-400">
-                ⚠️ Please note that the app is under development and may not
-                work as expected.
-              </p>
-            </>
-          )}
-
-          {!selectedImage && (
-            <ImageUpload
-              isDragOver={isDragOver}
-              onFileChange={handleFileChange}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-            />
-          )}
-        </div>
-      </div>
+      {/* Title and upload image section */}
+      {!selectedImage && (
+        <ImageUpload
+          isDragOver={isDragOver}
+          onFileChange={handleFileChange}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        />
+      )}
+      {/* Loader */}
+      {selectedImage && isLoadingImage && (
+        <LoadingSpinner message="Loading image..." />
+      )}
+      {/* Image preview section */}
+      {selectedImage && !isLoadingImage && (
+        <ImagePreview
+          imageSrc={selectedImage}
+          showComparison={
+            hue !== 0 ||
+            saturation !== 100 ||
+            brightness !== 100 ||
+            contrast !== 100 ||
+            grayscale !== 0 ||
+            invert !== 0 ||
+            blur !== 0 ||
+            rotation !== 0 ||
+            scale !== 100
+          }
+          width={width}
+          height={height}
+          saturation={saturation}
+          brightness={brightness}
+          contrast={contrast}
+          hue={hue}
+          grayscale={grayscale}
+          invert={invert}
+          blur={blur}
+        />
+      )}
     </div>
   );
 }
