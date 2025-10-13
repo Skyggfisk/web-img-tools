@@ -63,12 +63,14 @@ export const ImagePreview = (props: ImagePreviewProps) => {
   // load the texture
   useEffect(() => {
     if (sourceImageTexture === Texture.EMPTY) {
-      Assets.load({ src: imageSrc, parser: "loadTextures" }).then(
-        (loadedTexture) => {
+      Assets.load({ src: imageSrc, parser: "loadTextures" })
+        .then((loadedTexture) => {
           setSourceTexture(loadedTexture);
           setManipulatedImageTexture(loadedTexture);
-        }
-      );
+        })
+        .catch((err) => {
+          console.error("Error loading image:", err);
+        });
     }
   }, [imageSrc]);
 
