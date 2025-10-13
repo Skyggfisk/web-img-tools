@@ -27,7 +27,7 @@ export const ZoomOverlay = ({
         +
       </div>
       <div
-        className="bg-black/50  px-3 py-1 rounded text-sm cursor-pointer"
+        className="bg-black/50 px-3 py-1 rounded text-sm cursor-pointer"
         onClick={() => setZoom((z) => Math.max(z - 0.1, 0.1))}
       >
         -
