@@ -195,7 +195,7 @@ export function App() {
   };
 
   return (
-    <div className="h-screen w-screen relative overflow-x-hidden">
+    <div className="h-dvh w-screen relative overflow-x-hidden">
       {/* Menu section */}
       <BurgerMenu
         isOpen={sidebarOpen}

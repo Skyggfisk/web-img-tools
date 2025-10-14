@@ -41,7 +41,7 @@ export const ZoomOverlay = ({
             setRotation((r) => (r + 90) % 360);
           }
         }}
-        title="Rotate 90° clockwise"
+        title="Rotate 90° clockwise, ctrl+click to reset"
       >
         ↻
       </div>
