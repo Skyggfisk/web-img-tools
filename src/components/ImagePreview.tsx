@@ -4,6 +4,7 @@ import {
   BlurFilter,
   ColorMatrixFilter,
   Container,
+  type Filter,
   Graphics,
   Sprite,
   Texture,
@@ -16,16 +17,13 @@ interface ImagePreviewProps {
   imageSrc: string;
   width: number;
   height: number;
-  saturation: number;
-  brightness: number;
-  contrast: number;
-  hue: number;
-  grayscale: number;
-  invert: number;
-  blur: number;
   showComparison?: boolean;
+  layers: any[];
+  workingLayer: any;
 }
 
+// PixiJS/React components use "pixi" prefix, eg. `<pixiSprite />`
+// @see https://react.pixijs.io/extend/
 extend({ Container, Sprite, Texture, Graphics, BlurFilter, ColorMatrixFilter });
 
 export const ImagePreview = (props: ImagePreviewProps) => {
@@ -33,14 +31,9 @@ export const ImagePreview = (props: ImagePreviewProps) => {
     imageSrc,
     width,
     height,
-    saturation,
-    brightness,
-    contrast,
-    hue,
-    grayscale,
-    invert,
-    blur,
     showComparison = false,
+    layers,
+    workingLayer,
   } = props;
 
   const [sourceImageTexture, setSourceTexture] = useState(Texture.EMPTY);
@@ -75,28 +68,54 @@ export const ImagePreview = (props: ImagePreviewProps) => {
   }, [imageSrc]);
 
   const filters = useMemo(() => {
-    const filterList = [];
+    const filterList: Filter[] = [];
 
-    // create a blur filter
-    if (blur > 0) {
+    // Apply committed layers first
+    layers.forEach((layer) => {
+      const { blur, hue, saturation, brightness, contrast, grayscale, invert } =
+        layer.values;
+
+      // create a blur filter
+      if (blur > 0) {
+        const blurFilter = new BlurFilter();
+        blurFilter.strength = blur;
+        filterList.push(blurFilter);
+      }
+
+      // color adjustment filters - multiply (stack) false for now
+      const colorMatrix = new ColorMatrixFilter();
+      if (hue !== 0) colorMatrix.hue(hue, false);
+      if (saturation !== 100) colorMatrix.saturate(saturation / 100 - 1, false);
+      if (brightness !== 100) colorMatrix.brightness(brightness / 100, false);
+      if (contrast !== 100) colorMatrix.contrast(contrast / 100, false);
+      if (grayscale > 0) colorMatrix.grayscale(grayscale / 100, false);
+      if (invert > 0) colorMatrix.negative(false); // invert is boolean
+      // TODO: more filters and presets available check later
+      filterList.push(colorMatrix);
+    });
+
+    // Then apply working layer adjustments
+    const values = workingLayer;
+    if (values.blur > 0) {
       const blurFilter = new BlurFilter();
-      blurFilter.blur = blur;
+      blurFilter.strength = values.blur;
       filterList.push(blurFilter);
     }
-
-    // color adjustment filters - multiply (stack) false for now
     const colorMatrix = new ColorMatrixFilter();
-    if (hue !== 0) colorMatrix.hue(hue, false);
-    if (saturation !== 100) colorMatrix.saturate(saturation / 100 - 1, false);
-    if (brightness !== 100) colorMatrix.brightness(brightness / 100, false);
-    if (contrast !== 100) colorMatrix.contrast(contrast / 100, false);
-    if (grayscale > 0) colorMatrix.grayscale(grayscale / 100, false);
-    if (invert > 0) colorMatrix.negative(false); // invert is boolean
-    // TODO: more filters and presets available check later
+    if (values.hue !== 0) colorMatrix.hue(values.hue, false);
+    if (values.saturation !== 100)
+      colorMatrix.saturate(values.saturation / 100 - 1, false);
+    if (values.brightness !== 100)
+      colorMatrix.brightness(values.brightness / 100, false);
+    if (values.contrast !== 100)
+      colorMatrix.contrast(values.contrast / 100, false);
+    if (values.grayscale > 0)
+      colorMatrix.grayscale(values.grayscale / 100, false);
+    if (values.invert > 0) colorMatrix.negative(false);
     filterList.push(colorMatrix);
 
     return filterList;
-  }, [hue, saturation, brightness, contrast, grayscale, invert, blur]);
+  }, [layers, workingLayer]);
 
   const splitMask = useMemo(() => {
     if (!showComparison) return null;

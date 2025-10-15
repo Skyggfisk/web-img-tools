@@ -1,21 +1,16 @@
 import { useState } from "react";
+import type { Layer, WorkingLayer, EditHistory } from "~/types/filters";
 
 interface FiltersEditProps {
-  hue: number;
-  setHue: (value: number) => void;
-  saturation: number;
-  setSaturation: (value: number) => void;
-  brightness: number;
-  setBrightness: (value: number) => void;
-  contrast: number;
-  setContrast: (value: number) => void;
-  grayscale: number;
-  setGrayscale: (value: number) => void;
-  invert: number;
-  setInvert: (value: number) => void;
-  blur: number;
-  setBlur: (value: number) => void;
-  onReset: () => void;
+  layers: Layer[];
+  setLayers: (layers: Layer[]) => void;
+  history: EditHistory;
+  currentHistoryIndex: number;
+  setCurrentHistoryIndex: (index: number) => void;
+  onApply: () => void;
+  onResetAllFilters: () => void;
+  workingLayer: WorkingLayer;
+  setWorkingLayer: (layer: WorkingLayer) => void;
 }
 
 const filterPresets = {
@@ -142,40 +137,70 @@ const filterPresets = {
 };
 
 export function FiltersEdit({
-  hue,
-  setHue,
-  saturation,
-  setSaturation,
-  brightness,
-  setBrightness,
-  contrast,
-  setContrast,
-  grayscale,
-  setGrayscale,
-  invert,
-  setInvert,
-  blur,
-  setBlur,
-  onReset,
+  layers,
+  setLayers,
+  history,
+  currentHistoryIndex,
+  setCurrentHistoryIndex,
+  onApply,
+  onResetAllFilters,
+  workingLayer,
+  setWorkingLayer,
 }: FiltersEditProps) {
   const [selectedPreset, setSelectedPreset] =
     useState<keyof typeof filterPresets>("none");
 
   const applyPreset = (presetKey: keyof typeof filterPresets) => {
     const preset = filterPresets[presetKey];
-    setHue(preset.hue);
-    setSaturation(preset.saturation);
-    setBrightness(preset.brightness);
-    setContrast(preset.contrast);
-    setGrayscale(preset.grayscale);
-    setInvert(preset.invert);
-    setBlur(preset.blur);
+
+    setWorkingLayer({
+      hue: preset.hue,
+      saturation: preset.saturation,
+      brightness: preset.brightness,
+      contrast: preset.contrast,
+      grayscale: preset.grayscale,
+      invert: preset.invert,
+      blur: preset.blur,
+    });
     setSelectedPreset(presetKey);
   };
 
-  const handleReset = () => {
-    onReset();
-    setSelectedPreset("none");
+  const undo = () => {
+    if (currentHistoryIndex < 0) return; // No more history to undo
+
+    if (currentHistoryIndex === 0) {
+      // Reset to initial state
+      setWorkingLayer({
+        hue: 0,
+        saturation: 100,
+        brightness: 100,
+        contrast: 100,
+        grayscale: 0,
+        invert: 0,
+        blur: 0,
+      });
+      setCurrentHistoryIndex(-1);
+      setLayers([]);
+    } else {
+      // undo previous state
+      const prevState = history[currentHistoryIndex - 1];
+      setWorkingLayer(prevState!);
+      setCurrentHistoryIndex(currentHistoryIndex - 1);
+      setLayers(layers.slice(0, -1)); // Remove last layer
+    }
+  };
+
+  const redo = () => {
+    if (currentHistoryIndex >= history.length - 1) return; // No more history to redo
+
+    const nextIndex = currentHistoryIndex + 1;
+    const nextState = history[nextIndex];
+
+    setWorkingLayer(nextState!);
+    setCurrentHistoryIndex(nextIndex);
+
+    const nextLayer = { type: "committed", values: nextState! };
+    setLayers([...layers, nextLayer]); // Add back the next layer
   };
 
   return (
@@ -215,11 +240,18 @@ export function FiltersEdit({
                   type="range"
                   min="0"
                   max="360"
-                  value={hue}
-                  onChange={(e) => setHue(Number(e.target.value))}
+                  value={workingLayer.hue}
+                  onChange={(e) =>
+                    setWorkingLayer({
+                      ...workingLayer,
+                      hue: Number(e.target.value),
+                    })
+                  }
                   className="flex-1"
                 />
-                <span className="w-12 text-center text-sm">{hue}°</span>
+                <span className="w-12 text-center text-sm">
+                  {workingLayer.hue}°
+                </span>
               </div>
 
               <div className="flex items-center gap-4">
@@ -228,11 +260,18 @@ export function FiltersEdit({
                   type="range"
                   min="0"
                   max="200"
-                  value={saturation}
-                  onChange={(e) => setSaturation(Number(e.target.value))}
+                  value={workingLayer.saturation}
+                  onChange={(e) =>
+                    setWorkingLayer({
+                      ...workingLayer,
+                      saturation: Number(e.target.value),
+                    })
+                  }
                   className="flex-1"
                 />
-                <span className="w-12 text-center text-sm">{saturation}%</span>
+                <span className="w-12 text-center text-sm">
+                  {workingLayer.saturation}%
+                </span>
               </div>
 
               <div className="flex items-center gap-4">
@@ -241,11 +280,18 @@ export function FiltersEdit({
                   type="range"
                   min="0"
                   max="200"
-                  value={brightness}
-                  onChange={(e) => setBrightness(Number(e.target.value))}
+                  value={workingLayer.brightness}
+                  onChange={(e) =>
+                    setWorkingLayer({
+                      ...workingLayer,
+                      brightness: Number(e.target.value),
+                    })
+                  }
                   className="flex-1"
                 />
-                <span className="w-12 text-center text-sm">{brightness}%</span>
+                <span className="w-12 text-center text-sm">
+                  {workingLayer.brightness}%
+                </span>
               </div>
 
               <div className="flex items-center gap-4">
@@ -254,11 +300,18 @@ export function FiltersEdit({
                   type="range"
                   min="0"
                   max="200"
-                  value={contrast}
-                  onChange={(e) => setContrast(Number(e.target.value))}
+                  value={workingLayer.contrast}
+                  onChange={(e) =>
+                    setWorkingLayer({
+                      ...workingLayer,
+                      contrast: Number(e.target.value),
+                    })
+                  }
                   className="flex-1"
                 />
-                <span className="w-12 text-center text-sm">{contrast}%</span>
+                <span className="w-12 text-center text-sm">
+                  {workingLayer.contrast}%
+                </span>
               </div>
             </div>
           </div>
@@ -273,11 +326,18 @@ export function FiltersEdit({
                   type="range"
                   min="0"
                   max="100"
-                  value={grayscale}
-                  onChange={(e) => setGrayscale(Number(e.target.value))}
+                  value={workingLayer.grayscale}
+                  onChange={(e) =>
+                    setWorkingLayer({
+                      ...workingLayer,
+                      grayscale: Number(e.target.value),
+                    })
+                  }
                   className="flex-1"
                 />
-                <span className="w-12 text-center text-sm">{grayscale}%</span>
+                <span className="w-12 text-center text-sm">
+                  {workingLayer.grayscale}%
+                </span>
               </div>
 
               <div className="flex items-center gap-4">
@@ -286,11 +346,18 @@ export function FiltersEdit({
                   type="range"
                   min="0"
                   max="100"
-                  value={invert}
-                  onChange={(e) => setInvert(Number(e.target.value))}
+                  value={workingLayer.invert}
+                  onChange={(e) =>
+                    setWorkingLayer({
+                      ...workingLayer,
+                      invert: Number(e.target.value),
+                    })
+                  }
                   className="flex-1"
                 />
-                <span className="w-12 text-center text-sm">{invert}%</span>
+                <span className="w-12 text-center text-sm">
+                  {workingLayer.invert}%
+                </span>
               </div>
 
               <div className="flex items-center gap-4">
@@ -299,11 +366,18 @@ export function FiltersEdit({
                   type="range"
                   min="0"
                   max="20"
-                  value={blur}
-                  onChange={(e) => setBlur(Number(e.target.value))}
+                  value={workingLayer.blur}
+                  onChange={(e) =>
+                    setWorkingLayer({
+                      ...workingLayer,
+                      blur: Number(e.target.value),
+                    })
+                  }
                   className="flex-1"
                 />
-                <span className="w-12 text-center text-sm">{blur}px</span>
+                <span className="w-12 text-center text-sm">
+                  {workingLayer.blur}px
+                </span>
               </div>
             </div>
           </div>
@@ -313,13 +387,27 @@ export function FiltersEdit({
       {/* Buttons */}
       <div className="flex justify-center gap-4 mt-4">
         <button
-          onClick={handleReset}
+          onClick={undo}
+          disabled={currentHistoryIndex < 0}
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+        >
+          Undo
+        </button>
+        <button
+          onClick={redo}
+          disabled={currentHistoryIndex >= history.length - 1}
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+        >
+          Redo
+        </button>
+        <button
+          onClick={onResetAllFilters}
           className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
         >
           Reset All
         </button>
         <button
-          onClick={onReset}
+          onClick={onApply}
           className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 cursor-pointer"
         >
           Apply

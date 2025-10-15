@@ -15,6 +15,7 @@ import { ToolDrawer } from "./ToolDrawer";
 import { TransformEdit } from "./TransformEdit";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { ImagePreview } from "./ImagePreview";
+import type { EditHistory, Layer, WorkingLayer } from "~/types/filters";
 
 export function App() {
   const [isLoadingImage, setIsLoadingImage] = useState(false);
@@ -29,18 +30,23 @@ export function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<ActiveTool>("info");
   const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
-  const [hue, setHue] = useState<number>(0);
-  const [saturation, setSaturation] = useState<number>(100);
-  const [brightness, setBrightness] = useState<number>(100);
-  const [contrast, setContrast] = useState<number>(100);
-  const [grayscale, setGrayscale] = useState<number>(0);
-  const [invert, setInvert] = useState<number>(0);
-  const [blur, setBlur] = useState<number>(0);
-  const [rotation, setRotation] = useState<number>(0);
   const [scale, setScale] = useState<number>(100);
   const [width, setWidth] = useState<number>(0);
   const [height, setHeight] = useState<number>(0);
   const [keepAspectRatio, setKeepAspectRatio] = useState<boolean>(true);
+  // Layer and history state
+  const [layers, setLayers] = useState<Layer[]>([]);
+  const [history, setHistory] = useState<EditHistory>([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
+  const [workingLayer, setWorkingLayer] = useState<WorkingLayer>({
+    hue: 0,
+    saturation: 100,
+    brightness: 100,
+    contrast: 100,
+    grayscale: 0,
+    invert: 0,
+    blur: 0,
+  });
 
   const extractImageInfo = async (file: File) => {
     setIsLoadingImage(true);
@@ -151,11 +157,6 @@ export function App() {
     setPalette(null);
     setOptimizedImage(null);
     setOptimizedSize(null);
-    setHue(0);
-    setSaturation(100);
-    setBrightness(100);
-    setContrast(100);
-    setRotation(0);
     setScale(100);
     setWidth(0);
     setHeight(0);
@@ -192,6 +193,47 @@ export function App() {
     };
 
     img.src = imageToDownload;
+  };
+
+  const applyLayers = () => {
+    const currentState = {
+      ...workingLayer,
+    };
+    setHistory([...history.slice(0, currentHistoryIndex + 1), currentState]);
+    setCurrentHistoryIndex(currentHistoryIndex + 1);
+
+    // Add current filters as a new layer
+    const newLayer = {
+      type: "committed",
+      values: currentState,
+    };
+    setLayers([...layers, newLayer]);
+
+    // Reset working layer
+    setWorkingLayer({
+      hue: 0,
+      saturation: 100,
+      brightness: 100,
+      contrast: 100,
+      grayscale: 0,
+      invert: 0,
+      blur: 0,
+    });
+  };
+
+  const resetAllFilters = () => {
+    setLayers([]);
+    setHistory([]);
+    setCurrentHistoryIndex(-1);
+    setWorkingLayer({
+      hue: 0,
+      saturation: 100,
+      brightness: 100,
+      contrast: 100,
+      grayscale: 0,
+      invert: 0,
+      blur: 0,
+    });
   };
 
   return (
@@ -240,29 +282,15 @@ export function App() {
 
           {activeSection === "filters" && (
             <FiltersEdit
-              hue={hue}
-              setHue={setHue}
-              saturation={saturation}
-              setSaturation={setSaturation}
-              brightness={brightness}
-              setBrightness={setBrightness}
-              contrast={contrast}
-              setContrast={setContrast}
-              grayscale={grayscale}
-              setGrayscale={setGrayscale}
-              invert={invert}
-              setInvert={setInvert}
-              blur={blur}
-              setBlur={setBlur}
-              onReset={() => {
-                setHue(0);
-                setSaturation(100);
-                setBrightness(100);
-                setContrast(100);
-                setGrayscale(0);
-                setInvert(0);
-                setBlur(0);
-              }}
+              layers={layers}
+              setLayers={setLayers}
+              history={history}
+              currentHistoryIndex={currentHistoryIndex}
+              setCurrentHistoryIndex={setCurrentHistoryIndex}
+              onApply={applyLayers}
+              onResetAllFilters={resetAllFilters}
+              workingLayer={workingLayer}
+              setWorkingLayer={setWorkingLayer}
             />
           )}
 
@@ -307,25 +335,19 @@ export function App() {
         <ImagePreview
           imageSrc={selectedImage}
           showComparison={
-            hue !== 0 ||
-            saturation !== 100 ||
-            brightness !== 100 ||
-            contrast !== 100 ||
-            grayscale !== 0 ||
-            invert !== 0 ||
-            blur !== 0 ||
-            rotation !== 0 ||
-            scale !== 100
+            layers.length > 0 ||
+            workingLayer.hue !== 0 ||
+            workingLayer.saturation !== 100 ||
+            workingLayer.brightness !== 100 ||
+            workingLayer.contrast !== 100 ||
+            workingLayer.grayscale !== 0 ||
+            workingLayer.invert !== 0 ||
+            workingLayer.blur !== 0
           }
           width={width}
           height={height}
-          saturation={saturation}
-          brightness={brightness}
-          contrast={contrast}
-          hue={hue}
-          grayscale={grayscale}
-          invert={invert}
-          blur={blur}
+          layers={layers}
+          workingLayer={workingLayer}
         />
       )}
     </div>
