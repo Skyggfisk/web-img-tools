@@ -1,6 +1,6 @@
 # Web Image Tools
 
-A comprehensive client-side image manipulation and analysis web application built with modern web technologies. Upload, analyze, optimize, and edit images directly in your browser.
+A fully client-side image manipulation and analysis web application built with modern web technologies. Upload, analyze, optimize, and edit images directly in your browser.
 
 > [!WARNING]
 > This project is still very much under construction and barely any of the features work as described yet. You are free to play around and preview, but don't expect actual optimization or great filters.
@@ -12,74 +12,44 @@ A comprehensive client-side image manipulation and analysis web application buil
 - **🎨 Color Palette Extraction** - Automatically generate color palettes from images
 - **⚡ Image Optimization** - Convert formats (PNG, JPEG, WebP) and adjust compression
 - **🎛️ Advanced Filters** - Real-time image editing with hue, saturation, brightness, contrast controls
-- **🔄 Transform Tools** - Rotate and scale images with smooth controls
 - **🔎 Interactive Zoom & Pan** - Mouse wheel zoom and drag-to-pan functionality
-- **📱 Responsive Design** - Works seamlessly on desktop and mobile devices
-- **🎯 Intuitive UI** - Clean, intuitive interface with tool drawers and navigation
 
 ## 🔒 Privacy & Security
 
 **Fully Static & Local** - This application runs entirely in your browser with zero server communication. Your images never leave your device, ensuring complete privacy and security. No data is sent to external servers.
 
-## 🏗️ Architecture & Tech Stack
+## 🏗️ Tech Stack
 
 ### Core Technologies
 
-- **Runtime**: [Bun](https://bun.com) - Fast all-in-one JavaScript runtime and build tool
-- **Frontend**: React 18 with TypeScript for type-safe component development
-- **Styling**: Tailwind CSS for utility-first responsive design
-- **Build System**: Bun's built-in bundler for optimized production builds
+- **Runtime+Bundler**: [Bun](https://bun.com) - Fast all-in-one JavaScript runtime and build tool
+- **Frontend**: [React](https://react.dev/) - With TypeScript for type-safe component development
+- **Styling**: [TailwindCSS](https://tailwindcss.com/) - For utility-first responsive design
 
 ### Key Libraries
 
-- **exifr** - EXIF metadata extraction from images
-- **colorthief** - Dominant color palette generation
-- **Canvas API** - Client-side image processing and manipulation
-
-### Architecture Highlights
-
-- **Component-Based**: Modular React components for maintainability
-- **Client-Side Processing**: All image operations performed locally in the browser
-- **Responsive Layout**: Mobile-first design with adaptive UI elements
-- **Performance Optimized**: Efficient rendering and memory management for large images
+- **[PixiJS](https://pixijs.com/)** - flexible 2D webGL renderer
+- **[exifr](https://github.com/MikeKovarik/exifr)** - EXIF metadata extraction from images
+- **[colorthief](https://lokeshdhakar.com/projects/color-thief/)** - Dominant color palette generation
 
 ## 🚀 Setup & Installation
 
 ### Prerequisites
 
 - [Bun](https://bun.sh) (recommended) or Node.js 18+
-- Modern web browser with Canvas API support
+- Modern web browser with [Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and at least [webGL](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API) support
 
-### Quick Start
-
-1. **Clone the repository**
-
-   ```bash
-   git clone <repository-url>
-   cd web-img-tools
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   bun install
-   ```
-
-3. **Start development server**
-
-   ```bash
-   bun dev
-   ```
-
-4. **Open your browser** to `http://localhost:3000`
-
-### Development Commands
+### Quick Start and Development Commands
 
 ```bash
+# Clone the repository
+git clone https://github.com/Skyggfisk/web-img-tools.git
+cd web-img-tools
+
 # Install dependencies
 bun install
 
-# Start development server with hot reload
+# Start development server with hot reload, defaults to localhost:3000
 bun dev
 
 # Build for production
@@ -111,54 +81,6 @@ This project includes dev container configuration for a consistent development e
    bun run build  # Build for production
    ```
 
-### Manual Setup (Without Dev Containers)
-
-If you prefer not to use dev containers:
-
-1. **Install Bun**:
-
-   ```bash
-   # macOS/Linux
-   curl -fsSL https://bun.sh/install | bash
-
-   # Windows
-   powershell -c "irm bun.sh/install.ps1 | iex"
-   ```
-
-2. **Install Dependencies**:
-
-   ```bash
-   bun install
-   ```
-
-3. **Start Development**:
-   ```bash
-   bun dev
-   ```
-
-## 📁 Project Structure
-
-```
-web-img-tools/
-├── src/
-│   ├── components/          # React components
-│   │   ├── App.tsx         # Main application component
-│   │   ├── ImagePreview.tsx # Full-screen image viewer
-│   │   ├── Sidebar.tsx     # Navigation sidebar
-│   │   └── ...             # Other feature components
-│   ├── styles/
-│   │   └── index.css       # Global styles and Tailwind imports
-│   ├── types/
-│   │   └── types.ts        # TypeScript type definitions
-│   └── utils/
-│       └── imageUtils.ts   # Image processing utilities
-├── public/                  # Static assets
-├── package.json            # Dependencies and scripts
-├── tailwind.config.js      # Tailwind CSS configuration
-├── tsconfig.json          # TypeScript configuration
-└── README.md              # This file
-```
-
 ## 🎯 Usage
 
 1. **Upload an Image**: Drag & drop or click the upload area
@@ -168,15 +90,3 @@ web-img-tools/
 5. **Optimize**: Convert formats and adjust compression settings
 6. **Edit**: Apply filters, rotate, and scale your images
 7. **Zoom & Pan**: Use mouse wheel and drag to explore images
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit issues and pull requests.
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-Built with ❤️ using Bun, React, and Tailwind CSS
