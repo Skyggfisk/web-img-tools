@@ -1,6 +1,6 @@
 // src/types/actions.ts
 import type { ActiveTool, ImageInfo } from "~/types/types";
-import type { Layer, WorkingLayer } from "~/types/filters";
+import type { WorkingLayer } from "~/types/filters";
 
 // UI Actions
 export type UiAction =
@@ -28,12 +28,3 @@ export type FilterAction =
   | { type: "RESET_FILTERS" }
   | { type: "UNDO" }
   | { type: "REDO" };
-
-// TODO: Implement these action types as needed
-// // Transform Actions
-// export type TransformAction =
-//   | { type: "SET_SCALE"; payload: number }
-//   | { type: "SET_WIDTH"; payload: number }
-//   | { type: "SET_HEIGHT"; payload: number }
-//   | { type: "SET_KEEP_ASPECT_RATIO"; payload: boolean }
-//   | { type: "RESET_TRANSFORM" };

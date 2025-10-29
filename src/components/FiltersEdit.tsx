@@ -125,7 +125,14 @@ const filterPresets = {
 };
 
 export function FiltersEdit() {
-  const { state: filterState, dispatch: filterDispatch } = useFilter();
+  const {
+    filterState,
+    setWorkingLayer,
+    applyFilter,
+    resetFilters,
+    undo,
+    redo,
+  } = useFilter();
 
   const [selectedPreset, setSelectedPreset] =
     useState<keyof typeof filterPresets>("none");
@@ -133,75 +140,18 @@ export function FiltersEdit() {
   const applyPreset = (presetKey: keyof typeof filterPresets) => {
     const preset = filterPresets[presetKey];
 
-    filterDispatch({
-      type: "SET_WORKING_LAYER",
-      payload: {
-        hue: preset.hue,
-        saturation: preset.saturation,
-        brightness: preset.brightness,
-        contrast: preset.contrast,
-        grayscale: preset.grayscale,
-        invert: preset.invert,
-        blur: preset.blur,
-      },
+    setWorkingLayer({
+      hue: preset.hue,
+      saturation: preset.saturation,
+      brightness: preset.brightness,
+      contrast: preset.contrast,
+      grayscale: preset.grayscale,
+      invert: preset.invert,
+      blur: preset.blur,
     });
+
     setSelectedPreset(presetKey);
   };
-
-  // const undo = () => {
-  //   if (filterState.historyIndex < 0) return; // No more history to undo
-
-  //   if (filterState.historyIndex === 0) {
-  //     // Reset to initial state
-  //     filterDispatch({
-  //       type: "SET_WORKING_LAYER",
-  //       payload: {
-  //         hue: 0,
-  //         saturation: 100,
-  //         brightness: 100,
-  //         contrast: 100,
-  //         grayscale: 0,
-  //         invert: 0,
-  //         blur: 0,
-  //       },
-  //     });
-  //   } else {
-  //     // undo previous state
-  //     const prevState = filterState.editHistory[filterState.historyIndex - 1];
-  //     filterDispatch({
-  //       type: "SET_WORKING_LAYER",
-  //       payload: {
-  //         hue: prevState!.hue,
-  //         saturation: prevState!.saturation,
-  //         brightness: prevState!.brightness,
-  //         contrast: prevState!.contrast,
-  //         grayscale: prevState!.grayscale,
-  //         invert: prevState!.invert,
-  //         blur: prevState!.blur,
-  //       },
-  //     });
-  //   }
-  // };
-
-  // const redo = () => {
-  //   if (filterState.historyIndex >= filterState.editHistory.length - 1) return; // No more history to redo
-
-  //   const nextIndex = filterState.historyIndex + 1;
-  //   const nextState = filterState.editHistory[nextIndex];
-
-  //   filterDispatch({
-  //     type: "SET_WORKING_LAYER",
-  //     payload: {
-  //       hue: nextState!.hue,
-  //       saturation: nextState!.saturation,
-  //       brightness: nextState!.brightness,
-  //       contrast: nextState!.contrast,
-  //       grayscale: nextState!.grayscale,
-  //       invert: nextState!.invert,
-  //       blur: nextState!.blur,
-  //     },
-  //   });
-  // };
 
   return (
     <div className="text-left mx-auto">
@@ -242,12 +192,9 @@ export function FiltersEdit() {
                   max="360"
                   value={filterState.workingLayer.hue}
                   onChange={(e) =>
-                    filterDispatch({
-                      type: "SET_WORKING_LAYER",
-                      payload: {
-                        ...filterState.workingLayer,
-                        hue: Number(e.target.value),
-                      },
+                    setWorkingLayer({
+                      ...filterState.workingLayer,
+                      hue: Number(e.target.value),
                     })
                   }
                   className="flex-1"
@@ -265,12 +212,9 @@ export function FiltersEdit() {
                   max="200"
                   value={filterState.workingLayer.saturation}
                   onChange={(e) =>
-                    filterDispatch({
-                      type: "SET_WORKING_LAYER",
-                      payload: {
-                        ...filterState.workingLayer,
-                        saturation: Number(e.target.value),
-                      },
+                    setWorkingLayer({
+                      ...filterState.workingLayer,
+                      saturation: Number(e.target.value),
                     })
                   }
                   className="flex-1"
@@ -288,12 +232,9 @@ export function FiltersEdit() {
                   max="200"
                   value={filterState.workingLayer.brightness}
                   onChange={(e) =>
-                    filterDispatch({
-                      type: "SET_WORKING_LAYER",
-                      payload: {
-                        ...filterState.workingLayer,
-                        brightness: Number(e.target.value),
-                      },
+                    setWorkingLayer({
+                      ...filterState.workingLayer,
+                      brightness: Number(e.target.value),
                     })
                   }
                   className="flex-1"
@@ -311,12 +252,9 @@ export function FiltersEdit() {
                   max="200"
                   value={filterState.workingLayer.contrast}
                   onChange={(e) =>
-                    filterDispatch({
-                      type: "SET_WORKING_LAYER",
-                      payload: {
-                        ...filterState.workingLayer,
-                        contrast: Number(e.target.value),
-                      },
+                    setWorkingLayer({
+                      ...filterState.workingLayer,
+                      contrast: Number(e.target.value),
                     })
                   }
                   className="flex-1"
@@ -340,12 +278,9 @@ export function FiltersEdit() {
                   max="100"
                   value={filterState.workingLayer.grayscale}
                   onChange={(e) =>
-                    filterDispatch({
-                      type: "SET_WORKING_LAYER",
-                      payload: {
-                        ...filterState.workingLayer,
-                        grayscale: Number(e.target.value),
-                      },
+                    setWorkingLayer({
+                      ...filterState.workingLayer,
+                      grayscale: Number(e.target.value),
                     })
                   }
                   className="flex-1"
@@ -363,12 +298,9 @@ export function FiltersEdit() {
                   max="100"
                   value={filterState.workingLayer.invert}
                   onChange={(e) =>
-                    filterDispatch({
-                      type: "SET_WORKING_LAYER",
-                      payload: {
-                        ...filterState.workingLayer,
-                        invert: Number(e.target.value),
-                      },
+                    setWorkingLayer({
+                      ...filterState.workingLayer,
+                      invert: Number(e.target.value),
                     })
                   }
                   className="flex-1"
@@ -386,12 +318,9 @@ export function FiltersEdit() {
                   max="20"
                   value={filterState.workingLayer.blur}
                   onChange={(e) =>
-                    filterDispatch({
-                      type: "SET_WORKING_LAYER",
-                      payload: {
-                        ...filterState.workingLayer,
-                        blur: Number(e.target.value),
-                      },
+                    setWorkingLayer({
+                      ...filterState.workingLayer,
+                      blur: Number(e.target.value),
                     })
                   }
                   className="flex-1"
@@ -408,14 +337,14 @@ export function FiltersEdit() {
       {/* Buttons */}
       <div className="flex justify-center gap-4 mt-4">
         <button
-          onClick={() => filterDispatch({ type: "UNDO" })}
+          onClick={undo}
           disabled={filterState.historyIndex < 0}
           className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
         >
           Undo
         </button>
         <button
-          onClick={() => filterDispatch({ type: "REDO" })}
+          onClick={redo}
           disabled={
             filterState.historyIndex >= filterState.editHistory.length - 1
           }
@@ -424,13 +353,13 @@ export function FiltersEdit() {
           Redo
         </button>
         <button
-          onClick={() => filterDispatch({ type: "RESET_FILTERS" })}
+          onClick={resetFilters}
           className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
         >
           Reset All
         </button>
         <button
-          onClick={() => filterDispatch({ type: "APPLY_LAYER" })}
+          onClick={applyFilter}
           className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 cursor-pointer"
         >
           Apply

@@ -1,28 +1,55 @@
-import { createContext, useReducer, useContext } from "react";
+import { createContext, useReducer, useContext, type ReactNode } from "react";
 import {
   imageFilterReducer,
   initialImageFilterState,
   type ImageFilterState,
 } from "~/reducers/imageFilterReducer";
-import type { FilterAction } from "~/types/actions";
+import type { WorkingLayer } from "~/types/filters";
 
 interface FilterContextType {
-  state: ImageFilterState;
-  dispatch: (action: FilterAction) => void;
+  filterState: ImageFilterState;
+  setWorkingLayer: (layer: WorkingLayer) => void;
+  applyFilter: () => void;
+  resetFilters: () => void;
+  undo: () => void;
+  redo: () => void;
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
-export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [state, dispatch] = useReducer(
+export const FilterProvider = ({ children }: { children: ReactNode }) => {
+  const [filterState, dispatch] = useReducer(
     imageFilterReducer,
     initialImageFilterState
   );
 
+  const setWorkingLayer = (layer: WorkingLayer) => {
+    dispatch({ type: "SET_WORKING_LAYER", payload: layer });
+  };
+  const applyFilter = () => {
+    dispatch({ type: "APPLY_LAYER" });
+  };
+  const resetFilters = () => {
+    dispatch({ type: "RESET_FILTERS" });
+  };
+  const undo = () => {
+    dispatch({ type: "UNDO" });
+  };
+  const redo = () => {
+    dispatch({ type: "REDO" });
+  };
+
   return (
-    <FilterContext.Provider value={{ state, dispatch }}>
+    <FilterContext.Provider
+      value={{
+        filterState,
+        setWorkingLayer,
+        applyFilter,
+        undo,
+        resetFilters,
+        redo,
+      }}
+    >
       {children}
     </FilterContext.Provider>
   );

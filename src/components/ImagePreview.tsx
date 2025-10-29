@@ -27,7 +27,7 @@ extend({ Container, Sprite, Texture, Graphics, BlurFilter, ColorMatrixFilter });
 export const ImagePreview = (props: ImagePreviewProps) => {
   const { imageSrc, width, height } = props;
 
-  const { state: filterState } = useFilter();
+  const { filterState } = useFilter();
   // TODO: ensure reactivity here
   const showComparison =
     filterState.layers.length > 0 ||
