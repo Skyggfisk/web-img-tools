@@ -12,14 +12,12 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PreviewSlider } from "./PreviewSlider";
 import { ZoomOverlay } from "./ZoomOverlay";
+import { useFilter } from "~/contexts/FilterContext";
 
 interface ImagePreviewProps {
   imageSrc: string;
   width: number;
   height: number;
-  showComparison?: boolean;
-  layers: any[];
-  workingLayer: any;
 }
 
 // PixiJS/React components use "pixi" prefix, eg. `<pixiSprite />`
@@ -27,14 +25,19 @@ interface ImagePreviewProps {
 extend({ Container, Sprite, Texture, Graphics, BlurFilter, ColorMatrixFilter });
 
 export const ImagePreview = (props: ImagePreviewProps) => {
-  const {
-    imageSrc,
-    width,
-    height,
-    showComparison = false,
-    layers,
-    workingLayer,
-  } = props;
+  const { imageSrc, width, height } = props;
+
+  const { state: filterState } = useFilter();
+  // TODO: ensure reactivity here
+  const showComparison =
+    filterState.layers.length > 0 ||
+    filterState.workingLayer.hue !== 0 ||
+    filterState.workingLayer.saturation !== 100 ||
+    filterState.workingLayer.brightness !== 100 ||
+    filterState.workingLayer.contrast !== 100 ||
+    filterState.workingLayer.grayscale !== 0 ||
+    filterState.workingLayer.invert !== 0 ||
+    filterState.workingLayer.blur !== 0;
 
   const [sourceImageTexture, setSourceTexture] = useState(Texture.EMPTY);
   const [manipulatedImageTexture, setManipulatedImageTexture] = useState(
@@ -71,7 +74,7 @@ export const ImagePreview = (props: ImagePreviewProps) => {
     const filterList: Filter[] = [];
 
     // Apply committed layers first
-    layers.forEach((layer) => {
+    filterState.layers.forEach((layer) => {
       const { blur, hue, saturation, brightness, contrast, grayscale, invert } =
         layer.values;
 
@@ -95,7 +98,7 @@ export const ImagePreview = (props: ImagePreviewProps) => {
     });
 
     // Then apply working layer adjustments
-    const values = workingLayer;
+    const values = filterState.workingLayer;
     if (values.blur > 0) {
       const blurFilter = new BlurFilter();
       blurFilter.strength = values.blur;
@@ -115,7 +118,7 @@ export const ImagePreview = (props: ImagePreviewProps) => {
     filterList.push(colorMatrix);
 
     return filterList;
-  }, [layers, workingLayer]);
+  }, [filterState.layers, filterState.workingLayer]);
 
   const splitMask = useMemo(() => {
     if (!showComparison) return null;

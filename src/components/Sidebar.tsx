@@ -58,11 +58,12 @@ export function Sidebar({
                 isActiveSection={activeSection === "optimization"}
                 handleSectionClick={() => handleSectionClick("optimization")}
               />
-              <SidebarMenu
+              {/* TODO: Transform menu and controls */}
+              {/* <SidebarMenu
                 menuName="Transform"
                 isActiveSection={activeSection === "transform"}
                 handleSectionClick={() => handleSectionClick("transform")}
-              />
+              /> */}
             </div>
             <div className="w-full">
               <span className="text-neutral-400">Settings</span>
